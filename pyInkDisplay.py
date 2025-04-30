@@ -61,9 +61,6 @@ def render_image(epd, image):
         return  # Log the error and return, don't exit.
 
     # prepare the epd, write the image, and close
-    logging.info(f"{render_image.__name__}: EPD mode: {epd.mode}")
-    logging.info(f"{render_image.__name__}: EPD palette_filter: {epd.palette_filter}")
-    logging.info(f"{render_image.__name__}: EPD max_colors: {epd.max_colors}")
     logging.info(f'{render_image.__name__}: Preparing display')
     epd.prepare()
 
@@ -99,6 +96,8 @@ def main():
                                 help="Path to an image file to draw on the display")
     mutex_group2.add_argument('-r', '--remote', type=str,
                                 help="URL of remote image to show")
+    parser.add_argument('-t', '--time', type=int, default=600,
+                        help="Time between updates in seconds (default: 600)") # added time argument
 
     args = parser.parse_args()
 
@@ -107,6 +106,7 @@ def main():
         list_displays()
         sys.exit()
 
+    epd = None  # Initialize epd outside the try block
     try:
         epd = displayfactory.load_display_driver(args.epd)
     except EPDNotFoundError:
@@ -116,26 +116,40 @@ def main():
         logging.error(f"{main.__name__}: Error loading EPD driver: {e}")
         sys.exit()
 
-    if args.image:
-        try:
-            image = Image.open(args.image)
-            render_image(epd, image)  # show image once
-        except FileNotFoundError:
-            logging.error(f"{main.__name__}: Image file not found: {args.image}")
+    logging.info(f"{render_image.__name__}: EPD mode: {epd.mode}")
+    logging.info(f"{render_image.__name__}: EPD palette_filter: {epd.palette_filter}")
+    logging.info(f"{render_image.__name__}: EPD max_colors: {epd.max_colors}")
+
+    try:  # Put the main logic in a try block for cleanup
+        if args.image:
+            try:
+                image = Image.open(args.image)
+                render_image(epd, image)  # show image once
+            except FileNotFoundError:
+                logging.error(f"{main.__name__}: Image file not found: {args.image}")
+                sys.exit()
+            except Exception as e:
+                logging.error(f"{main.__name__}: Error opening image file: {e}")
+                sys.exit()
+        elif args.remote:
+            url = args.remote
+            while True:  # loop until user exits
+                image = fetch_image(url)
+                if image:
+                    render_image(epd, image)
+                logging.info(f"{main.__name__}: Time to refresh: {args.time}")
+                time.sleep(args.time)  # wait user specified time
+        else:
+            logging.info(f"{main.__name__}: No image source provided. Exiting.")
             sys.exit()
-        except Exception as e:
-            logging.error(f"{main.__name__}: Error opening image file: {e}")
-            sys.exit()
-    elif args.remote:
-        url = args.remote
-        while True:  # loop until user exits
-            image = fetch_image(url)
-            if image:
-                render_image(epd, image)
-            time.sleep(60)  # wait 60 seconds
-    else:
-        logging.info(f"{main.__name__}: No image source provided. Exiting.")
-        sys.exit()
+
+    finally:  # Use a finally block to ensure cleanup
+        if epd:
+            try:
+                epd.close()  # Ensure the display is closed
+                logging.info(f"{main.__name__}: EPD display closed.")
+            except Exception as e:
+                logging.error(f"{main.__name__}: Error closing EPD: {e}")
 
     logging.info(f'{main.__name__}: Exiting')
 
@@ -143,4 +157,23 @@ def main():
 
 if __name__ == "__main__":
     main()
+"""
+To run this script within a virtual environment as a systemd service, you need to modify the `ExecStart` line in your service file to use the Python interpreter from your virtual environment.
 
+Here's the updated service file template:
+
+/etc/systemd/system/pyInkdisplay.service
+
+[Unit]
+Description=EPD Image Display Service
+After=network.target
+[Service]
+User=your_user
+Group=your_group
+WorkingDirectory=/path/to/your/script
+ExecStart=/path/to/your/virtualenv/bin/python /path/to/your/script/your_script.py -e your_epd_driver -r your_image_url 
+Restart=on-failure
+PrivateTmp=true
+[Install]
+WantedBy=multi-user.target
+"""
