@@ -1,0 +1,12 @@
+
+#These to get waveshare working
+#waveshare-epd @ git+https://github.com/waveshareteam/e-Paper.git@f97f1ae168a14cf37525d4aedaa442833ca2dcc0#subdirectory=RaspberryPi_JetsonNano/python
+waveshare-epd @ git+https://github.com/waveshareteam/e-Paper.git#subdirectory=RaspberryPi_JetsonNano/python
+RPi.GPIO
+spidev
+gpiozero
+lgpio
+requests
+
+#These to get omni_epd working
+omni_epd @ git+https://github.com/robweber/omni-epd.git
