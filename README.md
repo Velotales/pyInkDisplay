@@ -18,6 +18,24 @@ I found this to be quite a dependancy nightmare, so included in the repo is a re
 2.  **Compile:** `pip-compile requirements.in`
 3.  **Install:** `pip install -r requirements.txt`
 
+## Systemd
+
+I've added a basic systemd service template that can be used to run this on startup.
+
+Here are the commands to manage your systemd service:
+
+1.  **Reload:** `sudo systemctl daemon-reload` -  Reload the systemd daemon configuration.  This is necessary after creating or modifying a service file.
+
+2.  **Enable:** `sudo systemctl enable pyInkDisplay.service` - Enable the service to start automatically at boot.
+
+3.  **Start:** `sudo systemctl start pyInkDisplay.service` - Start the service immediately.
+
+4.  **Status:** `sudo systemctl status pyInkDisplay.service` -  Show the current status of the service (running, stopped, errors, etc.).
+
+5.  **Stop:** `sudo systemctl stop pyInkDisplay.service` - Stop the service.
+
+6.  **Disable:** `sudo systemctl disable pyInkDisplay.service` - Prevent the service from starting automatically at boot.
+
 ## Similar work
 This project was inspired by several e-ink display project including:
 
