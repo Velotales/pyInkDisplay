@@ -157,23 +157,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-"""
-To run this script within a virtual environment as a systemd service, you need to modify the `ExecStart` line in your service file to use the Python interpreter from your virtual environment.
-
-Here's the updated service file template:
-
-/etc/systemd/system/pyInkdisplay.service
-
-[Unit]
-Description=EPD Image Display Service
-After=network.target
-[Service]
-User=your_user
-Group=your_group
-WorkingDirectory=/path/to/your/script
-ExecStart=/path/to/your/virtualenv/bin/python /path/to/your/script/your_script.py -e your_epd_driver -r your_image_url 
-Restart=on-failure
-PrivateTmp=true
-[Install]
-WantedBy=multi-user.target
-"""
