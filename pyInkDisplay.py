@@ -88,16 +88,16 @@ def main():
     parser = argparse.ArgumentParser(description='EPD Test Utility')
     mutex_group = parser.add_mutually_exclusive_group(required=True)
     mutex_group.add_argument('-l', '--list', action='store_true',
-                                help="List valid EPD display options")
+                             help="List valid EPD display options")
     mutex_group.add_argument('-e', '--epd',
-                                help="The type of EPD driver to test")
+                             help="The type of EPD driver to test")
     mutex_group2 = parser.add_mutually_exclusive_group(required=False)
     mutex_group2.add_argument('-i', '--image', type=str,
-                                help="Path to an image file to draw on the display")
+                             help="Path to an image file to draw on the display")
     mutex_group2.add_argument('-r', '--remote', type=str,
-                                help="URL of remote image to show")
-    parser.add_argument('-t', '--time', type=int, default=600,
-                        help="Time between updates in seconds (default: 600)") # added time argument
+                             help="URL of remote image to show")
+    parser.add_argument('-t', '--time', type=int,
+                             help="Time between updates in seconds. If provided with -r, the image will update repeatedly.")
 
     args = parser.parse_args()
 
@@ -133,12 +133,18 @@ def main():
                 sys.exit()
         elif args.remote:
             url = args.remote
-            while True:  # loop until user exits
+            if args.time is not None:
+                while True:  # loop until user exits
+                    image = fetch_image(url)
+                    if image:
+                        render_image(epd, image)
+                    logging.info(f"{main.__name__}: Time to refresh: {args.time}")
+                    time.sleep(args.time)  # wait user specified time
+            else:
+                # Fetch and display once, then exit
                 image = fetch_image(url)
-                if image:
-                    render_image(epd, image)
-                logging.info(f"{main.__name__}: Time to refresh: {args.time}")
-                time.sleep(args.time)  # wait user specified time
+                render_image(epd, image)
+                logging.info(f"{main.__name__}: Displayed remote image once. Exiting.")
         else:
             logging.info(f"{main.__name__}: No image source provided. Exiting.")
             sys.exit()
@@ -152,7 +158,6 @@ def main():
                 logging.error(f"{main.__name__}: Error closing EPD: {e}")
 
     logging.info(f'{main.__name__}: Exiting')
-
 
 
 if __name__ == "__main__":
