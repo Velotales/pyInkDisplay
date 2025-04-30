@@ -15,7 +15,6 @@ def list_displays():
     print("\n".join(map(str, validDisplays)))
 
 
-
 def fetch_image(url):
     """
     Downloads an image from a URL and returns it as a PIL Image object.
@@ -33,15 +32,16 @@ def fetch_image(url):
 
         # Create a PIL Image object from the downloaded content
         image = Image.open(BytesIO(response.content))
-        logging.info("PIL Image object created from URL.")
+        logging.info(f"{fetch_image.__name__}: PIL Image object created from URL.")
         return image
 
     except requests.exceptions.RequestException as e:
-        logging.error(f"Error fetching image from {url}: {e}")
+        logging.error(f"{fetch_image.__name__}: Error fetching image from {url}: {e}")
         return None
     except Exception as e:
-        logging.error(f"An unexpected error occurred: {e}")
+        logging.error(f"{fetch_image.__name__}: An unexpected error occurred: {e}")
         return None
+
 
 
 def render_image(epd, image):
@@ -53,29 +53,29 @@ def render_image(epd, image):
         image (PIL.Image.Image): The image to display.
     """
     try:
-        logging.info(f"Image size: {image.size}")
+        logging.info(f"{render_image.__name__}: Image size: {image.size}")
         # Resize the image
         image = image.resize((epd.width, epd.height))
     except Exception as e:
-        logging.error(f"Error resizing image: {e}")
-        sys.exit()
+        logging.error(f"{render_image.__name__}: Error resizing image: {e}")
+        return  # Log the error and return, don't exit.
 
     # prepare the epd, write the image, and close
-    logging.info(f"EPD mode: {epd.mode}")
-    logging.info(f"EPD palette_filter: {epd.palette_filter}")
-    logging.info(f"EPD max_colors: {epd.max_colors}")
-    logging.info('Preparing display')
+    logging.info(f"{render_image.__name__}: EPD mode: {epd.mode}")
+    logging.info(f"{render_image.__name__}: EPD palette_filter: {epd.palette_filter}")
+    logging.info(f"{render_image.__name__}: EPD max_colors: {epd.max_colors}")
+    logging.info(f'{render_image.__name__}: Preparing display')
     epd.prepare()
 
-    logging.info('Clearing display')
+    logging.info(f'{render_image.__name__}: Clearing display')
     epd.clear()
-    logging.info('Writing to display')
+    logging.info(f'{render_image.__name__}: Writing to display')
     epd.display(image)
     epd.sleep()
     try:
         epd.close()
     except Exception as e:
-        logging.error(f"Error closing EPD: {e}") # Log, but don't sys.exit() here.
+        logging.error(f"{render_image.__name__}: Error closing EPD: {e}")  # Log, but don't sys.exit() here.
 
 
 
@@ -85,7 +85,7 @@ def main():
     logging.basicConfig(level=logging.INFO,
                         format='%(asctime)s - %(levelname)s - %(message)s')
 
-    logging.info('Starting')
+    logging.info(f'{main.__name__}: Starting')
 
     # Parse arguments
     parser = argparse.ArgumentParser(description='EPD Test Utility')
@@ -110,36 +110,37 @@ def main():
     try:
         epd = displayfactory.load_display_driver(args.epd)
     except EPDNotFoundError:
-        logging.error(f"Couldn't find EPD driver: {args.epd}")
+        logging.error(f"{main.__name__}: Couldn't find EPD driver: {args.epd}")
         sys.exit()
     except Exception as e:
-        logging.error(f"Error loading EPD driver: {e}")
+        logging.error(f"{main.__name__}: Error loading EPD driver: {e}")
         sys.exit()
 
     if args.image:
         try:
             image = Image.open(args.image)
-            render_image(epd, image) #show image once
+            render_image(epd, image)  # show image once
         except FileNotFoundError:
-            logging.error(f"Image file not found: {args.image}")
+            logging.error(f"{main.__name__}: Image file not found: {args.image}")
             sys.exit()
         except Exception as e:
-            logging.error(f"Error opening image file: {e}")
+            logging.error(f"{main.__name__}: Error opening image file: {e}")
             sys.exit()
     elif args.remote:
         url = args.remote
-        while True: #loop until user exits
+        while True:  # loop until user exits
             image = fetch_image(url)
             if image:
                 render_image(epd, image)
-            time.sleep(60) #wait 60 seconds
+            time.sleep(60)  # wait 60 seconds
     else:
-        logging.info("No image source provided. Exiting.")
+        logging.info(f"{main.__name__}: No image source provided. Exiting.")
         sys.exit()
 
-    logging.info('Exiting')
+    logging.info(f'{main.__name__}: Exiting')
 
 
 
 if __name__ == "__main__":
     main()
+
