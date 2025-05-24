@@ -1,6 +1,6 @@
 # pyInkDisplay
 
-My need was to display a Home Assistant dashboard
+My need was to display a Home Assistant dashboard on an e-ink display
 
 ![image](https://github.com/user-attachments/assets/8d20875c-5dad-4961-9875-134c08eebf63)
 
