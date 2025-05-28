@@ -9,3 +9,7 @@ requests
 
 #These to get omni_epd working
 omni_epd @ git+https://github.com/robweber/omni-epd.git
+
+#For the PiSugar3 Alarm
+pytz
+pisugar
