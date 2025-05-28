@@ -25,166 +25,130 @@ SOFTWARE.
 """
 
 import requests
-import os
-import sys
-import argparse
 import logging
-import time
 from omni_epd import displayfactory, EPDNotFoundError
 from PIL import Image
 from io import BytesIO
 
 
-def list_displays():
-    """Lists valid EPD display options."""
-    validDisplays = displayfactory.list_supported_displays()
-    print("\n".join(map(str, validDisplays)))
-
-
-def fetch_image(url):
+class PyInkDisplay:
     """
-    Downloads an image from a URL and returns it as a PIL Image object.
-
-    Args:
-        url (str): The URL to fetch the image from.
-
-    Returns:
-        PIL.Image.Image: The downloaded image as a PIL Image object, or None on error.
+    A class to manage and display images on E-Paper displays (EPD) using omni_epd.
+    It supports fetching images from local files or remote URLs and handling display operations.
     """
-    try:
-        # Send a GET request to the URL
-        response = requests.get(url)
-        response.raise_for_status()  # Raise an exception for bad status codes
 
-        # Create a PIL Image object from the downloaded content
-        image = Image.open(BytesIO(response.content))
-        logging.info(f"{fetch_image.__name__}: PIL Image object created from URL.")
-        return image
+    def __init__(self, epd_type: str = None):
+        """
+        Initializes the PyInkDisplay.
 
-    except requests.exceptions.RequestException as e:
-        logging.error(f"{fetch_image.__name__}: Error fetching image from {url}: {e}")
-        return None
-    except Exception as e:
-        logging.error(f"{fetch_image.__name__}: An unexpected error occurred: {e}")
-        return None
+        Args:
+            epd_type (str, optional): The type of EPD driver to load. If None, the display
+                                      driver will need to be loaded separately using loadDisplayDriver.
+        """
+        self.epd = None
+        logging.basicConfig(level=logging.INFO,
+                            format='%(asctime)s - %(levelname)s - %(funcName)s - %(message)s')
 
+        if epd_type:
+            self.loadDisplayDriver(epd_type)
 
+    def _setupLogging(self):
+        """Sets up basic logging for the class."""
+        # This method is typically called once in __init__
+        # and logging.basicConfig should ideally be set up once globally.
+        pass # The global logging.basicConfig in __init__ handles this now.
 
-def render_image(epd, image):
-    """
-    Displays the given image on the EPD.
+    @staticmethod
+    def listSupportedDisplays():
+        """Lists valid EPD display options supported by omni_epd."""
+        valid_displays = displayfactory.list_supported_displays()
+        print("\n".join(map(str, valid_displays)))
 
-    Args:
-        epd: The EPD driver object.
-        image (PIL.Image.Image): The image to display.
-    """
-    try:
-        logging.info(f"{render_image.__name__}: Image size: {image.size}")
-        # Resize the image
-        image = image.resize((epd.width, epd.height))
-    except Exception as e:
-        logging.error(f"{render_image.__name__}: Error resizing image: {e}")
-        return  # Log the error and return, don't exit.
+    def loadDisplayDriver(self, epd_type: str):
+        """
+        Loads the EPD display driver.
 
-    # prepare the epd, write the image, and close
-    logging.info(f'{render_image.__name__}: Preparing display')
-    epd.prepare()
+        Args:
+            epd_type (str): The type of EPD driver to load (e.g., 'waveshare_2in13_V2').
 
-    logging.info(f'{render_image.__name__}: Clearing display')
-    epd.clear()
-    logging.info(f'{render_image.__name__}: Writing to display')
-    epd.display(image)
-    epd.sleep()
-    try:
-        epd.close()
-    except Exception as e:
-        logging.error(f"{render_image.__name__}: Error closing EPD: {e}")  # Log, but don't sys.exit() here.
+        Raises:
+            EPDNotFoundError: If the specified EPD driver is not found.
+            Exception: For other errors during driver loading.
+        """
+        try:
+            self.epd = displayfactory.load_display_driver(epd_type)
+            logging.info(f"EPD driver '{epd_type}' loaded successfully.")
+            logging.info(f"EPD mode: {self.epd.mode}")
+            logging.info(f"EPD palette_filter: {self.epd.palette_filter}")
+            logging.info(f"EPD max_colors: {self.epd.max_colors}")
+        except EPDNotFoundError:
+            logging.error(f"Couldn't find EPD driver: {epd_type}")
+            raise
+        except Exception as e:
+            logging.error(f"Error loading EPD driver: {e}")
+            raise
 
+    @staticmethod
+    def fetchImageFromUrl(url: str) -> Image.Image | None:
+        """
+        Downloads an image from a URL and returns it as a PIL Image object.
 
+        Args:
+            url (str): The URL to fetch the image from.
 
-def main():
-    """Main function to parse arguments, load display, and show image."""
-    # Set up logging
-    logging.basicConfig(level=logging.INFO,
-                        format='%(asctime)s - %(levelname)s - %(message)s')
+        Returns:
+            PIL.Image.Image: The downloaded image as a PIL Image object, or None on error.
+        """
+        try:
+            response = requests.get(url)
+            response.raise_for_status()
+            image = Image.open(BytesIO(response.content))
+            logging.info(f"PIL Image object created from URL.")
+            return image
+        except requests.exceptions.RequestException as e:
+            logging.error(f"Error fetching image from {url}: {e}")
+            return None
+        except Exception as e:
+            logging.error(f"An unexpected error occurred: {e}")
+            return None
 
-    logging.info(f'{main.__name__}: Starting')
+    def displayImage(self, image: Image.Image):
+        """
+        Displays the given PIL Image object on the EPD.
 
-    # Parse arguments
-    parser = argparse.ArgumentParser(description='EPD Test Utility')
-    mutex_group = parser.add_mutually_exclusive_group(required=True)
-    mutex_group.add_argument('-l', '--list', action='store_true',
-                             help="List valid EPD display options")
-    mutex_group.add_argument('-e', '--epd',
-                             help="The type of EPD driver to test")
-    mutex_group2 = parser.add_mutually_exclusive_group(required=False)
-    mutex_group2.add_argument('-i', '--image', type=str,
-                             help="Path to an image file to draw on the display")
-    mutex_group2.add_argument('-r', '--remote', type=str,
-                             help="URL of remote image to show")
-    parser.add_argument('-t', '--time', type=int,
-                             help="Time between updates in seconds. If provided with -r, the image will update repeatedly.")
+        Args:
+            image (PIL.Image.Image): The image to display.
 
-    args = parser.parse_args()
+        Raises:
+            RuntimeError: If the EPD driver has not been loaded.
+        """
+        if not self.epd:
+            logging.error(f"EPD driver not loaded. Call loadDisplayDriver first.")
+            raise RuntimeError("EPD driver not loaded.")
 
-    if args.list:
-        # list valid displays and exit
-        list_displays()
-        sys.exit()
+        try:
+            logging.info(f"Image size: {image.size}")
+            image = image.resize((self.epd.width, self.epd.height))
+        except Exception as e:
+            logging.error(f"Error resizing image: {e}")
+            return
 
-    epd = None  # Initialize epd outside the try block
-    try:
-        epd = displayfactory.load_display_driver(args.epd)
-    except EPDNotFoundError:
-        logging.error(f"{main.__name__}: Couldn't find EPD driver: {args.epd}")
-        sys.exit()
-    except Exception as e:
-        logging.error(f"{main.__name__}: Error loading EPD driver: {e}")
-        sys.exit()
+        logging.info(f'Preparing display')
+        self.epd.prepare()
 
-    logging.info(f"{render_image.__name__}: EPD mode: {epd.mode}")
-    logging.info(f"{render_image.__name__}: EPD palette_filter: {epd.palette_filter}")
-    logging.info(f"{render_image.__name__}: EPD max_colors: {epd.max_colors}")
+        logging.info(f'Clearing display')
+        self.epd.clear()
+        logging.info(f'Writing to display')
+        self.epd.display(image)
+        self.epd.sleep()
 
-    try:  # Put the main logic in a try block for cleanup
-        if args.image:
+    def closeDisplay(self):
+        """Closes the EPD display connection."""
+        if self.epd:
             try:
-                image = Image.open(args.image)
-                render_image(epd, image)  # show image once
-            except FileNotFoundError:
-                logging.error(f"{main.__name__}: Image file not found: {args.image}")
-                sys.exit()
+                self.epd.close()
+                logging.info(f"EPD display closed.")
             except Exception as e:
-                logging.error(f"{main.__name__}: Error opening image file: {e}")
-                sys.exit()
-        elif args.remote:
-            url = args.remote
-            if args.time is not None:
-                while True:  # loop until user exits
-                    image = fetch_image(url)
-                    if image:
-                        render_image(epd, image)
-                    logging.info(f"{main.__name__}: Time to refresh: {args.time}")
-                    time.sleep(args.time)  # wait user specified time
-            else:
-                # Fetch and display once, then exit
-                image = fetch_image(url)
-                render_image(epd, image)
-                logging.info(f"{main.__name__}: Displayed remote image once. Exiting.")
-        else:
-            logging.info(f"{main.__name__}: No image source provided. Exiting.")
-            sys.exit()
-
-    finally:  # Use a finally block to ensure cleanup
-        if epd:
-            try:
-                epd.close()  # Ensure the display is closed
-                logging.info(f"{main.__name__}: EPD display closed.")
-            except Exception as e:
-                logging.error(f"{main.__name__}: Error closing EPD: {e}")
-
-    logging.info(f'{main.__name__}: Exiting')
-
-
-if __name__ == "__main__":
-    main()
+                logging.error(f"Error closing EPD: {e}")
+            finally:
+                self.epd = None
