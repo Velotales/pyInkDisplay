@@ -48,6 +48,8 @@ class PyInkDisplay:
         self.epd = None
         logging.basicConfig(level=logging.INFO,
                             format='%(asctime)s - %(levelname)s - %(funcName)s - %(message)s')
+        self.logger = logging.getLogger(self.__class__.__name__)
+        self.logger.info(f"Initializing PyInkDisplay.")
 
         if epd_type:
             self.loadDisplayDriver(epd_type)
