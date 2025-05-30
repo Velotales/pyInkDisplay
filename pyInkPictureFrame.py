@@ -28,10 +28,12 @@ import argparse
 import logging
 import sys
 import time
+import os
+import subprocess # Import the subprocess module
 
 # Import the classes from their new respective files (lower camelCase file names)
-from pyInkDisplay import PyInkDisplay       
-from pySugarAlarm import PiSugarAlarm, PiSugarConnectionError, PiSugarError 
+from pyInkDisplay import PyInkDisplay 
+from pySugarAlarm import PiSugarAlarm, PiSugarConnectionError, PiSugarError
 
 
 def pyInkPictureFrame():
@@ -42,15 +44,18 @@ def pyInkPictureFrame():
     logging.basicConfig(level=logging.INFO,
                         format='%(asctime)s - %(levelname)s - %(funcName)s - %(message)s')
 
-    parser = argparse.ArgumentParser(description='EPD Image Display and PiSugar Alarm Setter')
-    parser.add_argument('-e', '--epd', type=str, required=True,
+    argParser = argparse.ArgumentParser(description='EPD Image Display and PiSugar Alarm Setter') # Renamed parser to argParser
+    argParser.add_argument('-e', '--epd', type=str, required=True,
                         help="The type of EPD driver to use (e.g., 'waveshare_2in13_V2')")
-    parser.add_argument('-u', '--url', type=str, required=True,
+    argParser.add_argument('-u', '--url', type=str, required=True,
                         help="URL of the remote image to display on the EPD")
-    parser.add_argument('-a', '--alarm_minutes', type=int, default=20,
+    argParser.add_argument('-a', '--alarm_minutes', type=int, default=20,
                         help="Number of minutes in the future to set the PiSugar alarm (default: 20)")
+    argParser.add_argument('--no-shutdown', action='store_true',
+                        help="Do not shut down the computer after setting the alarm. For testing.")
 
-    args = parser.parse_args()
+
+    args = argParser.parse_args() # Use argParser to parse arguments
 
     # --- EPD Display Logic ---
     displayManager = None
@@ -92,6 +97,22 @@ def pyInkPictureFrame():
     except Exception as e:
         logging.error(f"An unexpected error occurred during PiSugar alarm setup: {e}")
         sys.exit(1)
+
+    # --- Shutdown Command ---
+    if not args.no_shutdown:
+        logging.info("All tasks completed. Shutting down the system...")
+        try:
+            #subprocess.run(["sudo", "poweroff"], check=True)
+            logging.info("Shutdown command issued successfully.")
+        except subprocess.CalledProcessError as e:
+            logging.error(f"Shutdown command failed with exit code {e.returncode}: {e}")
+            logging.error("Ensure the script is run with 'sudo' and 'poweroff' command is available.")
+        except FileNotFoundError:
+            logging.error("The 'sudo' or 'poweroff' command was not found. Ensure they are in your system's PATH.")
+        except Exception as e:
+            logging.error(f"An unexpected error occurred during shutdown: {e}")
+    else:
+        logging.info("Skipping shutdown due to --no-shutdown flag.")
 
 
 if __name__ == "__main__":
