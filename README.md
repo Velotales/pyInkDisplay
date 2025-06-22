@@ -9,8 +9,12 @@ This project takes an image, either locally, or remotaly, and displays it on an 
 
 This was written for a Raspberry Pi Zero W 2, using Waveshare's 7.3 inch 7 color e-ink display.
 
+To make it a true digital photo frame, I added a PiSugar 3 to provide battery power and the ability to power the Raspberry Pi Zero on with RTC.
+
 ## Libraries
 This project pulls in Rob Weber's [Omni-EPD](https://github.com/robweber/omni-epd/), so it "should" work with most e-ink displays.
+
+I also made use of [PiSugar python library](https://github.com/PiSugar/pisugar-python) to control the PiSugar and set the next wakeup interval. 
 
 I found this to be quite a dependancy nightmare, so included in the repo is a requirements.in. To use, follow this, preferably in a virtual environment:
 
