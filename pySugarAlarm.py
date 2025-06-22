@@ -43,6 +43,8 @@ except ImportError:
             logging.warning("Dummy PiSugarServer initialized. PiSugar module not found.")
         def get_rtc_time(self):
             raise PiSugarConnectionError("PiSugar module not available.")
+        def get_battery_power_plugged(self):
+            raise PiSugarConnectionError("PiSugar module not available.")
         def rtc_pi2rtc(self):
             raise PiSugarConnectionError("PiSugar module not available.")
         def rtc_alarm_set(self, *args, **kwargs):
@@ -175,6 +177,43 @@ class PiSugarAlarm:
             )
         return rtcDatetimeAfterSync
 
+    def _ensurePiSugarConnection(self):
+        """
+        Ensures that a connection to the PiSugar server is established.
+        If already connected (self.pisugar is not None), does nothing.
+        If not, it attempts to establish the connection.
+        Raises PiSugarConnectionError if connection fails.
+        """
+        if self.pisugar is None:
+            self.logger.info("PiSugar connection not established. Attempting to connect now.")
+            try:
+                self._connectToPiSugar()
+            except PiSugarConnectionError as e:
+                self.logger.error(f"Failed to establish PiSugar connection: {e}")
+                raise        
+
+    def isSugarPowered(self) -> bool:
+        """
+        Checks if the PiSugar is currently plugged into power.
+        This method ensures connection to PiSugar before attempting to get status.
+        Returns:
+            bool: True if powered (plugged in), False otherwise.
+        Raises:
+            PiSugarConnectionError: If connection to PiSugar cannot be established.
+            PiSugarError: If there's an error retrieving power status from PiSugar.
+        """
+        try:
+            self._ensurePiSugarConnection()
+            is_plugged = self.pisugar.get_battery_power_plugged()
+            self.logger.info(f"PiSugar power plugged status: {is_plugged}")
+            return is_plugged
+        except PiSugarConnectionError:
+            self.logger.error("Cannot check power status: Not connected to PiSugar. Please ensure pisugar-server is running.")
+            raise 
+        except Exception as e:
+            raise PiSugarError(f"Error getting battery power plugged status from PiSugar: {e}")
+
+            
     def setAlarm(self, secondsInFuture: int):
         """
         Main method to set the PiSugar alarm.
@@ -193,11 +232,11 @@ class PiSugarAlarm:
             time.sleep(5)
         self.logger.info("Connected.")
 
-        # Connect to PiSugar
+        # Ensure connection to PiSugar
         try:
-            self._connectToPiSugar()
+            self._ensure_pisugar_connection()
         except PiSugarConnectionError as e:
-            self.logger.error(f"Connection error: {e}")
+            self.logger.error(f"Connection error during alarm setup: {e}")
             sys.exit(1)
 
         # Get initial RTC time

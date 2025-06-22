@@ -102,8 +102,10 @@ def pyInkPictureFrame():
     if not args.no_shutdown:
         logging.info("All tasks completed. Shutting down the system...")
         try:
-            #subprocess.run(["sudo", "poweroff"], check=True)
-            logging.info("Shutdown command issued successfully.")
+            # If the PiSugar is powered, don't shutdown
+            if not alarmManager.isSugarPowered():
+                subprocess.run(["sudo", "shutdown", "+5"], check=True)
+                logging.info("Shutdown command issued successfully.")
         except subprocess.CalledProcessError as e:
             logging.error(f"Shutdown command failed with exit code {e.returncode}: {e}")
             logging.error("Ensure the script is run with 'sudo' and 'poweroff' command is available.")
