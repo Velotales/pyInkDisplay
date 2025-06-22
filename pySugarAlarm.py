@@ -234,7 +234,7 @@ class PiSugarAlarm:
 
         # Ensure connection to PiSugar
         try:
-            self._ensure_pisugar_connection()
+            self._ensurePiSugarConnection()
         except PiSugarConnectionError as e:
             self.logger.error(f"Connection error during alarm setup: {e}")
             sys.exit(1)
