@@ -7,7 +7,7 @@ My need was to display a Home Assistant dashboard on an e-ink display
 ## Details
 This project takes an image, either locally, or remotaly, and displays it on an e-ink display.
 
-This was writter on a Raspberry Pi Zero W 2, using Waveshare's 7.3 inch 7 color e-ink display.
+This was written for a Raspberry Pi Zero W 2, using Waveshare's 7.3 inch 7 color e-ink display.
 
 ## Libraries
 This project pulls in Rob Weber's [Omni-EPD](https://github.com/robweber/omni-epd/), so it "should" work with most e-ink displays.
