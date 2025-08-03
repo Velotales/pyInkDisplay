@@ -34,7 +34,7 @@ import subprocess
 from pyInkDisplay import PyInkDisplay, EPDNotFoundError
 from pySugarAlarm import PiSugarAlarm, PiSugarConnectionError, PiSugarError
 
-def continuous_epd_update_loop(displayManager, alarmManager, image_url, alarm_minutes):
+def continuousEpdUpdateLoop(displayManager, alarmManager, image_url, alarm_minutes):
     """
     Continuously update the e-ink display at the specified interval while power is present.
     """
@@ -122,7 +122,7 @@ def pyInkPictureFrame():
 
         if alarmManager.isSugarPowered():
             logging.info("PiSugar is currently powered. Entering continuous EPD update mode.")
-            continuous_epd_update_loop(displayManager, alarmManager, args.url, args.alarm_minutes)
+            continuousEpdUpdateLoop(displayManager, alarmManager, args.url, args.alarm_minutes)
 
         elif not args.no_shutdown:
             logging.info("All tasks completed. Shutting down the system...")
