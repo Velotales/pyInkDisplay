@@ -101,13 +101,20 @@ def pyInkPictureFrame():
                         keepRunningOnPower = False
                         break
 
+                # Make sure an alarm for the future has been set
+                secondsInFuture = args.alarm_minutes * 60
+                logging.info(f"Attempting to set PiSugar alarm for {args.alarm_minutes} minutes ({secondsInFuture} seconds) in the future.")
+                alarmManager.setAlarm(secondsInFuture=secondsInFuture)
+                logging.info("PiSugar alarm setting process completed.")
+
+
                 # If power was disconnected during sleep, break outer loop immediately
                 if not keepRunningOnPower: 
                     break
                                     
                 logging.info(f"Attempting to fetch updated image from URL: {args.url}")
                 updatedImage = displayManager.fetchImageFromUrl(args.url)
-                if updated_image:
+                if updatedImage:
                     logging.info("Updated image fetched successfully. Displaying on EPD.")
                     displayManager.displayImage(updatedImage)
                     logging.info("Updated image displayed on EPD.")
@@ -120,14 +127,13 @@ def pyInkPictureFrame():
                     keepRunningOnPower = False
                     break # Exit loop to potentially shut down
 
-
         # --- Shutdown Command ---
         elif not args.no_shutdown:
             logging.info("All tasks completed. Shutting down the system...")
             try:
                 # If the PiSugar is powered, don't shutdown
                 if not alarmManager.isSugarPowered():
-                    subprocess.run(["sudo", "shutdown", "+5"], check=True)
+                    subprocess.run(["sudo", "shutdown", "+1"], check=True)
                     logging.info("Shutdown command issued successfully.")
             except subprocess.CalledProcessError as e:
                 logging.error(f"Shutdown command failed with exit code {e.returncode}: {e}")
