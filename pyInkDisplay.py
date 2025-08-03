@@ -30,6 +30,7 @@ from omni_epd import displayfactory, EPDNotFoundError
 from PIL import Image
 from io import BytesIO
 
+logger = logging.getLogger(__name__)
 
 class PyInkDisplay:
     """
@@ -46,19 +47,10 @@ class PyInkDisplay:
                                       driver will need to be loaded separately using loadDisplayDriver.
         """
         self.epd = None
-        logging.basicConfig(level=logging.INFO,
-                            format='%(asctime)s - %(levelname)s - %(funcName)s - %(message)s')
-        self.logger = logging.getLogger(self.__class__.__name__)
-        self.logger.info(f"Initializing PyInkDisplay.")
+        logger.info(f"Initializing PyInkDisplay.")
 
         if epd_type:
             self.loadDisplayDriver(epd_type)
-
-    def _setupLogging(self):
-        """Sets up basic logging for the class."""
-        # This method is typically called once in __init__
-        # and logging.basicConfig should ideally be set up once globally.
-        pass # The global logging.basicConfig in __init__ handles this now.
 
     @staticmethod
     def listSupportedDisplays():
@@ -79,15 +71,15 @@ class PyInkDisplay:
         """
         try:
             self.epd = displayfactory.load_display_driver(epd_type)
-            logging.info(f"EPD driver '{epd_type}' loaded successfully.")
-            logging.info(f"EPD mode: {self.epd.mode}")
-            logging.info(f"EPD palette_filter: {self.epd.palette_filter}")
-            logging.info(f"EPD max_colors: {self.epd.max_colors}")
+            logger.info(f"EPD driver '{epd_type}' loaded successfully.")
+            logger.info(f"EPD mode: {self.epd.mode}")
+            logger.info(f"EPD palette_filter: {self.epd.palette_filter}")
+            logger.info(f"EPD max_colors: {self.epd.max_colors}")
         except EPDNotFoundError:
-            logging.error(f"Couldn't find EPD driver: {epd_type}")
+            logger.error(f"Couldn't find EPD driver: {epd_type}")
             raise
         except Exception as e:
-            logging.error(f"Error loading EPD driver: {e}")
+            logger.error(f"Error loading EPD driver: {e}")
             raise
 
     @staticmethod
@@ -105,13 +97,13 @@ class PyInkDisplay:
             response = requests.get(url)
             response.raise_for_status()
             image = Image.open(BytesIO(response.content))
-            logging.info(f"PIL Image object created from URL.")
+            logger.info(f"PIL Image object created from URL.")
             return image
         except requests.exceptions.RequestException as e:
-            logging.error(f"Error fetching image from {url}: {e}")
+            logger.error(f"Error fetching image from {url}: {e}")
             return None
         except Exception as e:
-            logging.error(f"An unexpected error occurred: {e}")
+            logger.error(f"An unexpected error occurred: {e}")
             return None
 
     def displayImage(self, image: Image.Image):
@@ -125,22 +117,22 @@ class PyInkDisplay:
             RuntimeError: If the EPD driver has not been loaded.
         """
         if not self.epd:
-            logging.error(f"EPD driver not loaded. Call loadDisplayDriver first.")
+            logger.error(f"EPD driver not loaded. Call loadDisplayDriver first.")
             raise RuntimeError("EPD driver not loaded.")
 
         try:
-            logging.info(f"Image size: {image.size}")
+            logger.info(f"Image size: {image.size}")
             image = image.resize((self.epd.width, self.epd.height))
         except Exception as e:
-            logging.error(f"Error resizing image: {e}")
+            logger.error(f"Error resizing image: {e}")
             return
 
-        logging.info(f'Preparing display')
+        logger.info(f'Preparing display')
         self.epd.prepare()
 
-        logging.info(f'Clearing display')
+        logger.info(f'Clearing display')
         self.epd.clear()
-        logging.info(f'Writing to display')
+        logger.info(f'Writing to display')
         self.epd.display(image)
         self.epd.sleep()
 
@@ -149,8 +141,8 @@ class PyInkDisplay:
         if self.epd:
             try:
                 self.epd.close()
-                logging.info(f"EPD display closed.")
+                logger.info(f"EPD display closed.")
             except Exception as e:
-                logging.error(f"Error closing EPD: {e}")
+                logger.error(f"Error closing EPD: {e}")
             finally:
                 self.epd = None

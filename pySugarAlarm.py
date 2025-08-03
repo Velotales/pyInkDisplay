@@ -32,6 +32,7 @@ import pytz
 import logging
 
 logger = logging.getLogger(__name__)
+
 # Import the PiSugar module
 try:
     from pisugar import PiSugarServer, connect_tcp
