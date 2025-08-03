@@ -84,7 +84,7 @@ def pyInkPictureFrame():
     Main function to parse arguments, display image on EPD, and set PiSugar alarm.
     """
     logging.basicConfig(level=logging.INFO,
-                        format='%(asctime)s - %(levelname)s [%(module)s]:[%(funcName)s] - %(message)s')
+                        format='%(asctime)s - %(levelname)s [%(module)s]:[%(funcName)s:%(lineno)d] - %(message)s')
 
     argParser = argparse.ArgumentParser(description='EPD Image Display and PiSugar Alarm Setter')
     argParser.add_argument('-e', '--epd', type=str, required=True,
@@ -124,7 +124,8 @@ def pyInkPictureFrame():
             logging.info("PiSugar is currently powered. Entering continuous EPD update mode.")
             continuousEpdUpdateLoop(displayManager, alarmManager, args.url, args.alarm_minutes)
 
-        elif not args.no_shutdown:
+        # All the displaying is done, and the PiSugar is no longer powered.
+        if not args.no_shutdown:
             logging.info("All tasks completed. Shutting down the system...")
             try:
                 if not alarmManager.isSugarPowered():
@@ -149,7 +150,7 @@ def pyInkPictureFrame():
     finally:
         if displayManager:
             displayManager.closeDisplay()
-            logging.info("EPD display closed.")
+        logging.info("Exiting...")
 
 if __name__ == "__main__":
     pyInkPictureFrame()
