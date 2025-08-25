@@ -1,5 +1,4 @@
 """
-
 MIT License
 
 Copyright (c) 2025 Velotales
@@ -22,77 +21,142 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
+pyInkPictureFrame.py
+
+This is the main entry point for the pyInkPictureFrame project. It parses arguments, loads configuration, sets up logging,
+initializes the display and alarm managers, and orchestrates picture frame operation.
 """
 
 import argparse
 import logging
 import sys
-import time
-import os
 import subprocess
-import yaml  # New import for YAML config support
+import yaml
+import time
 
 from pyInkDisplay import PyInkDisplay, EPDNotFoundError
-from pySugarAlarm import PiSugarAlarm, PiSugarConnectionError, PiSugarError
+from pySugarAlarm import PiSugarAlarm
 
 def loadConfig(configPath):
     """
     Loads YAML config from the given path.
+
+    Args:
+        configPath (str): The path to the YAML config file.
+
+    Returns:
+        dict: The loaded configuration as a dictionary.
     """
     try:
         with open(configPath, "r") as f:
             config = yaml.safe_load(f)
-            if config is None:
-                return {}
-            return config
+            return config if config else {}
     except Exception as e:
-        logging.error(f"Failed to load config file {configPath}: {e}")
+        print(f"Failed to load config file {configPath}: {e}")
         return {}
+
+def parseArguments():
+    """
+    Sets up and parses command-line arguments for pyInkPictureFrame.
+    """
+    argParser = argparse.ArgumentParser(description='EPD Image Display and PiSugar Alarm Setter')
+    argParser.add_argument('-e', '--epd', type=str, help="The type of EPD driver to use")
+    argParser.add_argument('-u', '--url', type=str, help="URL of the remote image to display on the EPD")
+    argParser.add_argument('-a', '--alarmMinutes', type=int, help="Number of minutes in the future to set the PiSugar alarm (default: 20)")
+    argParser.add_argument('--noShutdown', action='store_true', help="Do not shut down the computer after setting the alarm. For testing.")
+    argParser.add_argument('-c', '--config', type=str, help="Path to YAML config file with settings")
+    return argParser.parse_args()
 
 def mergeArgsAndConfig(args, config):
     """
     Merges command-line arguments and config file values.
     Command-line arguments take precedence over config file values.
+
+    Args:
+        args: Parsed command-line arguments.
+        config (dict): Configuration dictionary.
+
+    Returns:
+        dict: Merged configuration.
     """
     merged = {}
-
-    # Map of arg name to config key
     argToConfig = {
         "epd": "epd",
         "url": "url",
         "alarmMinutes": "alarmMinutes",
-        "noShutdown": "noShutdown"
+        "noShutdown": "noShutdown",
+        "logging": "logging"
     }
-
-    # For backwards compatibility, accept both snake_case and camelCase in config
-    def getConfigValue(config, key):
-        if key in config:
-            return config[key]
-        snakeKey = ''.join(['_' + c.lower() if c.isupper() else c for c in key]).lstrip('_')
-        return config.get(snakeKey)
-
     for arg, configKey in argToConfig.items():
         argVal = getattr(args, arg, None)
-        configVal = getConfigValue(config, configKey)
-        # Use arg if it's set, else config, else fallback for booleans
+        configVal = config.get(configKey)
         if arg == "noShutdown":
             merged[arg] = argVal if argVal is not None else bool(configVal)
         elif arg == "alarmMinutes":
             merged[arg] = argVal if argVal is not None else (int(configVal) if configVal is not None else 20)
+        elif arg == "logging":
+            merged[arg] = configVal  # Only from config
         else:
             merged[arg] = argVal if argVal is not None else configVal
-
     return merged
+
+def setupLogging(loggingConfig):
+    """
+    Configures logging for the application.
+    Supports both console logging and Loki logging (via loki-logger-handler).
+    """
+    if not loggingConfig or loggingConfig.get("type", "console").lower() == "console":
+        logging.basicConfig(
+            level=logging.INFO,
+            format='%(asctime)s - %(levelname)s [%(module)s]:[%(funcName)s] - %(message)s'
+        )
+        logging.info("Console logging enabled.")
+        return
+
+    if loggingConfig.get("type", "").lower() == "loki":
+        try:
+            from loki_logger_handler import LokiHandler
+        except ImportError:
+            print("LokiHandler is not installed. Please install with 'pip install loki-logger-handler'")
+            sys.exit(1)
+
+        url = loggingConfig.get("url")
+        if not url:
+            print("Loki logging selected, but no 'url' provided in config.")
+            sys.exit(1)
+
+        level = getattr(logging, loggingConfig.get("level", "INFO").upper(), logging.INFO)
+        labels = loggingConfig.get("labels", {})
+        handler = LokiHandler(
+            url=url,
+            tags=labels,
+            version="1"
+        )
+        logger = logging.getLogger()
+        logger.setLevel(level)
+        logger.addHandler(handler)
+        logging.info(f"Loki logging enabled to {url} with labels {labels}.")
+    else:
+        logging.basicConfig(
+            level=logging.INFO,
+            format='%(asctime)s - %(levelname)s [%(module)s]:[%(funcName)s] - %(message)s'
+        )
+        logging.warning("Unknown logging type in config; defaulting to console logging.")
 
 def continuousEpdUpdateLoop(displayManager, alarmManager, imageUrl, alarmMinutes):
     """
     Continuously update the e-ink display at the specified interval while power is present.
+
+    Args:
+        displayManager: The display manager object.
+        alarmManager: The PiSugar alarm manager object.
+        imageUrl (str): The URL to fetch images from.
+        alarmMinutes (int): The interval in minutes for updating.
     """
     secondsInFuture = alarmMinutes * 60
     keepRunningOnPower = True
     while keepRunningOnPower:
         logging.info(f"Next EPD update scheduled in {alarmMinutes} minutes ({secondsInFuture} seconds).")
-        # Sleep in smaller chunks and check power status frequently
         remainingSleepTime = secondsInFuture
         checkInterval = 5
 
@@ -106,7 +170,6 @@ def continuousEpdUpdateLoop(displayManager, alarmManager, imageUrl, alarmMinutes
                 keepRunningOnPower = False
                 break
 
-        # Set alarm for the next interval
         secondsInFuture = alarmMinutes * 60
         logging.info(f"Attempting to set PiSugar alarm for {alarmMinutes} minutes ({secondsInFuture} seconds) in the future.")
         alarmManager.setAlarm(secondsInFuture=secondsInFuture)
@@ -131,34 +194,13 @@ def continuousEpdUpdateLoop(displayManager, alarmManager, imageUrl, alarmMinutes
 
 def pyInkPictureFrame():
     """
-    Main function to parse arguments, display image on EPD, and set PiSugar alarm.
+    Main function to display image on EPD and set PiSugar alarm.
     """
-    logging.basicConfig(level=logging.INFO,
-                        format='%(asctime)s - %(levelname)s [%(module)s]:[%(funcName)s] - %(message)s')
-
-    argParser = argparse.ArgumentParser(description='EPD Image Display and PiSugar Alarm Setter')
-    argParser.add_argument('-e', '--epd', type=str,
-                        help="The type of EPD driver to use (e.g., 'waveshare_2in13_V2')")
-    argParser.add_argument('-u', '--url', type=str,
-                        help="URL of the remote image to display on the EPD")
-    argParser.add_argument('-a', '--alarmMinutes', type=int,
-                        help="Number of minutes in the future to set the PiSugar alarm (default: 20)")
-    argParser.add_argument('--noShutdown', action='store_true',
-                        help="Do not shut down the computer after setting the alarm. For testing.")
-    argParser.add_argument('-c', '--config', type=str,
-                        help="Path to YAML config file with settings")
-
-    args = argParser.parse_args()
-
-    # Load config file if provided
-    config = {}
-    if args.config:
-        config = loadConfig(args.config)
-
-    # Merge CLI args and config file (CLI args take precedence)
+    args = parseArguments()
+    config = loadConfig(args.config) if args.config else {}
     merged = mergeArgsAndConfig(args, config)
+    setupLogging(merged.get("logging"))
 
-    # Required checks
     if not merged.get("epd"):
         logging.error("EPD type must be specified via --epd or in the config file.")
         sys.exit(1)
@@ -191,20 +233,14 @@ def pyInkPictureFrame():
         if alarmManager.isSugarPowered():
             logging.info("PiSugar is currently powered. Entering continuous EPD update mode.")
             continuousEpdUpdateLoop(displayManager, alarmManager, merged["url"], merged["alarmMinutes"])
-
         elif not merged["noShutdown"]:
             logging.info("All tasks completed. Shutting down the system...")
             try:
                 if not alarmManager.isSugarPowered():
                     subprocess.run(["sudo", "shutdown", "+1"], check=True)
                     logging.info("Shutdown command issued successfully.")
-            except subprocess.CalledProcessError as e:
-                logging.error(f"Shutdown command failed with exit code {e.returncode}: {e}")
-                logging.error("Ensure the script is run with 'sudo' and 'poweroff' command is available.")
-            except FileNotFoundError:
-                logging.error("The 'sudo' or 'poweroff' command was not found. Ensure they are in your system's PATH.")
             except Exception as e:
-                logging.error(f"An unexpected error occurred during shutdown: {e}")
+                logging.error(f"Error during shutdown: {e}")
         else:
             logging.info("Skipping shutdown due to --noShutdown flag.")
 
