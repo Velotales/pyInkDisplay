@@ -27,7 +27,7 @@ Unit tests for pySugarAlarm.py
 
 import pytest
 from unittest.mock import patch, MagicMock
-from pySugarAlarm import PiSugarAlarm
+from pyinkdisplay.pySugarAlarm import PiSugarAlarm
 
 
 @patch('pySugarAlarm.connect_tcp')

@@ -28,7 +28,7 @@ Unit tests for pyInkDisplay.py
 import pytest
 from unittest.mock import patch, MagicMock
 from PIL import Image
-from pyInkDisplay import PyInkDisplay, EPDNotFoundError
+from pyinkdisplay.pyInkDisplay import PyInkDisplay, EPDNotFoundError
 
 
 @patch('omni_epd.displayfactory.load_display_driver')
