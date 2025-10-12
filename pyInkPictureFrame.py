@@ -34,7 +34,9 @@ import subprocess
 import yaml
 import time
 
-from pyInkDisplay import PyInkDisplay, PiSugarAlarm, fetchImageFromUrl, EPDNotFoundError
+from pyInkDisplay import PyInkDisplay, EPDNotFoundError
+from pySugarAlarm import PiSugarAlarm
+from utils import fetchImageFromUrl
 
 def loadConfig(configPath):
     """
