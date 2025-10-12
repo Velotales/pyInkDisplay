@@ -8,7 +8,7 @@ from . import utils
 __all__ = [
     "PyInkDisplay",
     "EPDNotFoundError",
-    "PiSugarAlarm",
+    "PiSugarAlarm", 
     "PiSugarConnectionError",
     "PiSugarError",
     "loadConfig",
@@ -17,3 +17,5 @@ __all__ = [
     "setupLogging",
     "utils",
 ]
+
+__version__ = "1.0.0"

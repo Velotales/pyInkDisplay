@@ -1,11 +1,13 @@
 [Unit]
-Description=EPD Image Display Service
-After=network.target
+Description=pyInkDisplay - E-Paper Display Service for Home Assistant Dashboard
+After=network-online.target
+Wants=network-online.target
 
 [Service]
 User=your_user
 Group=your_group
 WorkingDirectory=/path/to/your/script
+Environment=PATH=/path/to/your/virtualenv/bin/:/usr/local/bin:/usr/bin:/bin
 ExecStart=/path/to/your/virtualenv/bin/python /path/to/your/script/your_script.py -e your_epd_driver -r your_image_url 
 Restart=on-failure
 PrivateTmp=true

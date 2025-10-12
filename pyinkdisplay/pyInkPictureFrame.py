@@ -35,9 +35,9 @@ import yaml
 import time
 import signal
 
-from pyInkDisplay import PyInkDisplay, EPDNotFoundError
-from pySugarAlarm import PiSugarAlarm
-from utils import fetchImageFromUrl
+from .pyInkDisplay import PyInkDisplay, EPDNotFoundError
+from .pySugarAlarm import PiSugarAlarm
+from .utils import fetchImageFromUrl
 
 # Global variables for signal handler access
 displayManager = None
