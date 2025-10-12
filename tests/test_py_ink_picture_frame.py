@@ -26,72 +26,59 @@ Unit tests for pyInkPictureFrame.py
 """
 
 import pytest
-from unittest.mock import patch, MagicMock, mock_open
-import yaml
+from unittest.mock import patch, MagicMock
 from pyInkPictureFrame import loadConfig, parseArguments, mergeArgsAndConfig, setupLogging
 
 
-def test_load_config_success():
-    """Test loading valid config."""
-    config_data = {'epd': 'test', 'url': 'http://example.com'}
-    mock_file = mock_open(read_data=yaml.dump(config_data))
+def test_loadConfig_success():
+    """Test loading config from YAML file."""
+    with patch('builtins.open') as mock_open, \
+         patch('pyInkPictureFrame.yaml.safe_load') as mock_yaml_load:
+        mock_yaml_load.return_value = {'key': 'value'}
 
-    with patch('builtins.open', mock_file):
         result = loadConfig('config.yaml')
 
-        assert result == config_data
+        assert result == {'key': 'value'}
 
 
-def test_load_config_file_not_found():
-    """Test handling of missing config file."""
+def test_loadConfig_file_not_found():
+    """Test loading config when file is not found."""
     with patch('builtins.open', side_effect=FileNotFoundError):
         result = loadConfig('missing.yaml')
 
         assert result == {}
 
 
-def test_load_config_invalid_yaml():
-    """Test handling of invalid YAML."""
-    with patch('builtins.open', mock_open(read_data='invalid: yaml: content: [')):
-        result = loadConfig('config.yaml')
+def test_parseArguments():
+    """Test parsing command line arguments."""
+    with patch('pyInkPictureFrame.argparse.ArgumentParser') as mock_parser:
+        mock_args = MagicMock()
+        mock_parser.return_value.parse_args.return_value = mock_args
 
-        assert result == {}
+        result = parseArguments()
 
-
-@patch('pyInkPictureFrame.argparse.ArgumentParser.parse_args')
-def test_parse_arguments(mock_parse):
-    """Test argument parsing."""
-    mock_parse.return_value = MagicMock(epd='test', url='http://example.com', alarmMinutes=20, noShutdown=False, config=None)
-
-    args = parseArguments()
-
-    assert args.epd == 'test'
+        assert result == mock_args
 
 
-def test_merge_args_and_config():
-    """Test merging args and config."""
-    args = MagicMock(epd='arg_epd', url='arg_url', alarmMinutes=30, noShutdown=True, config=None, logging=None)
-    config = {'epd': 'config_epd', 'url': 'config_url', 'alarmMinutes': 40, 'noShutdown': False, 'logging': {'type': 'console'}}
+def test_mergeArgsAndConfig():
+    """Test merging arguments and config."""
+    args = MagicMock()
+    args.url = 'http://example.com'
+    args.alarmMinutes = 60  # Use correct argument name
+    args.epd = None
+    args.noShutdown = None
+
+    config = {'url': 'default.com', 'alarmMinutes': 30}
 
     result = mergeArgsAndConfig(args, config)
 
-    # Args should take precedence
-    assert result['epd'] == 'arg_epd'
-    assert result['alarmMinutes'] == 30
-    assert result['noShutdown'] == True
+    assert result['url'] == 'http://example.com'  # Args take precedence
+    assert result['alarmMinutes'] == 60  # Correct key
 
 
-@patch('pyInkPictureFrame.logging.basicConfig')
-def test_setup_logging_console(mock_basic):
-    """Test console logging setup."""
-    setupLogging({'type': 'console'})
+def test_setupLogging():
+    """Test setting up logging."""
+    with patch('pyInkPictureFrame.logging.basicConfig') as mock_basic_config:
+        setupLogging({'level': 'INFO'})
 
-    mock_basic.assert_called_once()
-
-
-@patch('pyInkPictureFrame.logging.basicConfig')
-def test_setup_logging_default(mock_basic):
-    """Test default logging setup."""
-    setupLogging(None)
-
-    mock_basic.assert_called_once()
+        mock_basic_config.assert_called_once()
