@@ -1,0 +1,14 @@
+# This configuration file is used by the pyInkPictureFrame project to specify
+# options for the EPD display, image URL, alarm interval, shutdown behavior,
+# and logging configuration (including Loki support).
+
+epd: "waveshare_epd.epd7in3f"
+url: "http://x.x.x.x"
+alarmMinutes: 2
+noShutdown: false
+#logging:
+#  type: "loki"  # Use "console" for console logging, "loki" for Loki remote logging
+#  url: "http://localhost:3100/loki/api/v1/push"  # Loki endpoint (required if type is loki)
+#  level: "INFO"
+#  labels:
+#    job: "pyInkPictureFrame"
