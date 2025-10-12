@@ -34,8 +34,7 @@ import subprocess
 import yaml
 import time
 
-from pyInkDisplay import PyInkDisplay, EPDNotFoundError
-from pySugarAlarm import PiSugarAlarm
+from pyInkDisplay import PyInkDisplay, PiSugarAlarm, fetchImageFromUrl, EPDNotFoundError
 
 def loadConfig(configPath):
     """
@@ -103,53 +102,14 @@ def mergeArgsAndConfig(args, config):
 def setupLogging(loggingConfig):
     """
     Configures logging for the application.
-    Supports both console logging and Loki logging (via loki-logger-handler).
+    Supports console logging only.
     """
-    if not loggingConfig or loggingConfig.get("type", "console").lower() == "console":
-        logging.basicConfig(
-            level=logging.INFO,
-            format='%(asctime)s - %(levelname)s [%(module)s]:[%(funcName)s] - %(message)s'
-        )
-        logging.info("Console logging enabled.")
-        return
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(levelname)s - %(module)s:%(funcName)s - %(message)s'
+    )
+    logging.info("Console logging enabled.")
 
-    if loggingConfig.get("type", "").lower() == "loki":
-        try:
-            from loki_logger_handler.loki_logger_handler import LokiLoggerHandler
-        except ImportError:
-            print("loki-logger-handler is not installed. Please install with 'pip install loki-logger-handler'")
-            sys.exit(1)
-
-        url = loggingConfig.get("url")
-        if not url:
-            print("Loki logging selected, but no 'url' provided in config.")
-            sys.exit(1)
-
-        level = getattr(logging, loggingConfig.get("level", "INFO").upper(), logging.INFO)
-
-        handler = LokiLoggerHandler(
-            url=url,
-            labels=loggingConfig.get("labels", {}),
-            label_keys=loggingConfig.get("label_keys", {}),
-            timeout=loggingConfig.get("timeout", 10),
-            auth=(
-                loggingConfig.get("username"),
-                loggingConfig.get("password")
-            ) if loggingConfig.get("username") and loggingConfig.get("password") else None
-        )
-        formatter = logging.Formatter('%(asctime)s - %(levelname)s [%(module)s]:[%(funcName)s] - %(message)s')
-        handler.setFormatter(formatter)
-        logger = logging.getLogger()
-        logger.setLevel(level)
-        logger.addHandler(handler)
-        logging.info(f"Loki logging enabled to {url} with labels {loggingConfig.get('labels', {})}.")
-    else:
-        logging.basicConfig(
-            level=logging.INFO,
-            format='%(asctime)s - %(levelname)s [%(module)s]:[%(funcName)s] - %(message)s'
-        )
-        logging.warning("Unknown logging type in config; defaulting to console logging.")
-        
 def continuousEpdUpdateLoop(displayManager, alarmManager, imageUrl, alarmMinutes):
     """
     Continuously update the e-ink display at the specified interval while power is present.
@@ -163,7 +123,7 @@ def continuousEpdUpdateLoop(displayManager, alarmManager, imageUrl, alarmMinutes
     secondsInFuture = alarmMinutes * 60
     keepRunningOnPower = True
     while keepRunningOnPower:
-        logging.info(f"Next EPD update scheduled in {alarmMinutes} minutes ({secondsInFuture} seconds).")
+        logging.info("Next EPD update scheduled in %d minutes (%d seconds).", alarmMinutes, secondsInFuture)
         remainingSleepTime = secondsInFuture
         checkInterval = 5
 
@@ -178,15 +138,15 @@ def continuousEpdUpdateLoop(displayManager, alarmManager, imageUrl, alarmMinutes
                 break
 
         secondsInFuture = alarmMinutes * 60
-        logging.info(f"Attempting to set PiSugar alarm for {alarmMinutes} minutes ({secondsInFuture} seconds) in the future.")
+        logging.info("Attempting to set PiSugar alarm for %d minutes (%d seconds) in the future.", alarmMinutes, secondsInFuture)
         alarmManager.setAlarm(secondsInFuture=secondsInFuture)
         logging.info("PiSugar alarm setting process completed.")
 
         if not keepRunningOnPower:
             break
 
-        logging.info(f"Attempting to fetch updated image from URL: {imageUrl}")
-        updatedImage = displayManager.fetchImageFromUrl(imageUrl)
+        logging.info("Attempting to fetch updated image from URL: %s", imageUrl)
+        updatedImage = fetchImageFromUrl(imageUrl)
         if updatedImage:
             logging.info("Updated image fetched successfully. Displaying on EPD.")
             displayManager.displayImage(updatedImage)
@@ -220,8 +180,8 @@ def pyInkPictureFrame():
 
     try:
         displayManager = PyInkDisplay(epd_type=merged["epd"])
-        logging.info(f"Attempting to fetch image from URL: {merged['url']}")
-        image = displayManager.fetchImageFromUrl(merged["url"])
+        logging.info("Attempting to fetch image from URL: %s", merged["url"])
+        image = fetchImageFromUrl(merged["url"])
 
         if image:
             logging.info("Image fetched successfully. Displaying on EPD.")
@@ -233,7 +193,7 @@ def pyInkPictureFrame():
 
         alarmManager = PiSugarAlarm()
         secondsInFuture = merged["alarmMinutes"] * 60
-        logging.info(f"Attempting to set PiSugar alarm for {merged['alarmMinutes']} minutes ({secondsInFuture} seconds) in the future.")
+        logging.info("Attempting to set PiSugar alarm for %d minutes (%d seconds) in the future.", merged["alarmMinutes"], secondsInFuture)
         alarmManager.setAlarm(secondsInFuture=secondsInFuture)
         logging.info("PiSugar alarm setting process completed.")
 
@@ -247,15 +207,15 @@ def pyInkPictureFrame():
                     subprocess.run(["sudo", "shutdown", "+1"], check=True)
                     logging.info("Shutdown command issued successfully.")
             except Exception as e:
-                logging.error(f"Error during shutdown: {e}")
+                logging.error("Error during shutdown: %s", e)
         else:
             logging.info("Skipping shutdown due to --noShutdown flag.")
 
     except (EPDNotFoundError, RuntimeError) as e:
-        logging.error(f"EPD display error: {e}")
+        logging.error("EPD display error: %s", e)
         sys.exit(1)
     except Exception as e:
-        logging.error(f"An unexpected error occurred during EPD display: {e}")
+        logging.error("An unexpected error occurred during EPD display: %s", e)
         sys.exit(1)
     finally:
         if displayManager:

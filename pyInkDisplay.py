@@ -24,11 +24,9 @@ SOFTWARE.
 
 """
 
-import requests
 import logging
 from omni_epd import displayfactory, EPDNotFoundError
 from PIL import Image
-from io import BytesIO
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +45,7 @@ class PyInkDisplay:
                                       driver will need to be loaded separately using loadDisplayDriver.
         """
         self.epd = None
-        logger.info(f"Initializing PyInkDisplay.")
+        logger.info("Initializing PyInkDisplay.")
 
         if epd_type:
             self.loadDisplayDriver(epd_type)
@@ -82,30 +80,6 @@ class PyInkDisplay:
             logger.error(f"Error loading EPD driver: {e}")
             raise
 
-    @staticmethod
-    def fetchImageFromUrl(url: str) -> Image.Image | None:
-        """
-        Downloads an image from a URL and returns it as a PIL Image object.
-
-        Args:
-            url (str): The URL to fetch the image from.
-
-        Returns:
-            PIL.Image.Image: The downloaded image as a PIL Image object, or None on error.
-        """
-        try:
-            response = requests.get(url)
-            response.raise_for_status()
-            image = Image.open(BytesIO(response.content))
-            logger.info(f"PIL Image object created from URL.")
-            return image
-        except requests.exceptions.RequestException as e:
-            logger.error(f"Error fetching image from {url}: {e}")
-            return None
-        except Exception as e:
-            logger.error(f"An unexpected error occurred: {e}")
-            return None
-
     def displayImage(self, image: Image.Image):
         """
         Displays the given PIL Image object on the EPD.
@@ -117,7 +91,7 @@ class PyInkDisplay:
             RuntimeError: If the EPD driver has not been loaded.
         """
         if not self.epd:
-            logger.error(f"EPD driver not loaded. Call loadDisplayDriver first.")
+            logger.error("EPD driver not loaded. Call loadDisplayDriver first.")
             raise RuntimeError("EPD driver not loaded.")
 
         try:
@@ -127,12 +101,12 @@ class PyInkDisplay:
             logger.error(f"Error resizing image: {e}")
             return
 
-        logger.info(f'Preparing display')
+        logger.info("Preparing display")
         self.epd.prepare()
 
-        logger.info(f'Clearing display')
+        logger.info("Clearing display")
         self.epd.clear()
-        logger.info(f'Writing to display')
+        logger.info("Writing to display")
         self.epd.display(image)
         self.epd.sleep()
 
@@ -141,7 +115,7 @@ class PyInkDisplay:
         if self.epd:
             try:
                 self.epd.close()
-                logger.info(f"EPD display closed.")
+                logger.info("EPD display closed.")
             except Exception as e:
                 logger.error(f"Error closing EPD: {e}")
             finally:
