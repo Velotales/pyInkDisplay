@@ -18,4 +18,4 @@ pisugar
 PyYAML
 
 # Loki logging support
-loki-logger-handler
+#loki-logger-handler

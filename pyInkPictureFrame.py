@@ -115,9 +115,9 @@ def setupLogging(loggingConfig):
 
     if loggingConfig.get("type", "").lower() == "loki":
         try:
-            from loki_logger_handler import LokiHandler
+            from loki_logger_handler.loki_logger_handler import LokiLoggerHandler
         except ImportError:
-            print("LokiHandler is not installed. Please install with 'pip install loki-logger-handler'")
+            print("loki-logger-handler is not installed. Please install with 'pip install loki-logger-handler'")
             sys.exit(1)
 
         url = loggingConfig.get("url")
@@ -126,23 +126,30 @@ def setupLogging(loggingConfig):
             sys.exit(1)
 
         level = getattr(logging, loggingConfig.get("level", "INFO").upper(), logging.INFO)
-        labels = loggingConfig.get("labels", {})
-        handler = LokiHandler(
+
+        handler = LokiLoggerHandler(
             url=url,
-            tags=labels,
-            version="1"
+            labels=loggingConfig.get("labels", {}),
+            label_keys=loggingConfig.get("label_keys", {}),
+            timeout=loggingConfig.get("timeout", 10),
+            auth=(
+                loggingConfig.get("username"),
+                loggingConfig.get("password")
+            ) if loggingConfig.get("username") and loggingConfig.get("password") else None
         )
+        formatter = logging.Formatter('%(asctime)s - %(levelname)s [%(module)s]:[%(funcName)s] - %(message)s')
+        handler.setFormatter(formatter)
         logger = logging.getLogger()
         logger.setLevel(level)
         logger.addHandler(handler)
-        logging.info(f"Loki logging enabled to {url} with labels {labels}.")
+        logging.info(f"Loki logging enabled to {url} with labels {loggingConfig.get('labels', {})}.")
     else:
         logging.basicConfig(
             level=logging.INFO,
             format='%(asctime)s - %(levelname)s [%(module)s]:[%(funcName)s] - %(message)s'
         )
         logging.warning("Unknown logging type in config; defaulting to console logging.")
-
+        
 def continuousEpdUpdateLoop(displayManager, alarmManager, imageUrl, alarmMinutes):
     """
     Continuously update the e-ink display at the specified interval while power is present.
