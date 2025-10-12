@@ -1,4 +1,5 @@
 """
+
 pyInkDisplay package.
 
 MIT License
@@ -27,5 +28,6 @@ SOFTWARE.
 from .pyInkDisplay import PyInkDisplay
 from .pySugarAlarm import PiSugarAlarm
 from .utils import fetchImageFromUrl
+from omni_epd import EPDNotFoundError
 
-__all__ = ["PyInkDisplay", "PiSugarAlarm", "fetchImageFromUrl"]
+__all__ = ["PyInkDisplay", "PiSugarAlarm", "fetchImageFromUrl", "EPDNotFoundError"]

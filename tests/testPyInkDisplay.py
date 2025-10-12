@@ -32,7 +32,7 @@ from pyInkDisplay import PyInkDisplay, EPDNotFoundError
 
 
 @patch('pyInkDisplay.displayfactory.load_display_driver')
-def testLoadDisplayDriverSuccess(mock_load):
+def test_load_display_driver_success(mock_load):
     """Test successful display driver loading."""
     mock_epd = MagicMock()
     mock_load.return_value = mock_epd
@@ -45,7 +45,7 @@ def testLoadDisplayDriverSuccess(mock_load):
 
 
 @patch('pyInkDisplay.displayfactory.load_display_driver')
-def testLoadDisplayDriverNotFound(mock_load):
+def test_load_display_driver_not_found(mock_load):
     """Test handling of EPD not found."""
     mock_load.side_effect = EPDNotFoundError("Driver not found")
 
@@ -56,7 +56,7 @@ def testLoadDisplayDriverNotFound(mock_load):
 
 
 @patch('pyInkDisplay.displayfactory.load_display_driver')
-def testLoadDisplayDriverGeneralError(mock_load):
+def test_load_display_driver_general_error(mock_load):
     """Test handling of general errors in display driver loading."""
     mock_load.side_effect = Exception("General error")
 
@@ -67,7 +67,7 @@ def testLoadDisplayDriverGeneralError(mock_load):
 
 
 @patch.object(PyInkDisplay, 'epd', new_callable=MagicMock)
-def testDisplayImageSuccess(mock_epd):
+def test_display_image_success(mock_epd):
     """Test successful image display."""
     display = PyInkDisplay()
     display.epd = mock_epd
@@ -81,7 +81,7 @@ def testDisplayImageSuccess(mock_epd):
     mock_epd.display.assert_called_once_with(image)
 
 
-def testDisplayImageNoEpd():
+def test_display_image_no_epd():
     """Test display image without loaded EPD."""
     display = PyInkDisplay()
 
@@ -92,7 +92,7 @@ def testDisplayImageNoEpd():
 
 
 @patch.object(PyInkDisplay, 'epd', new_callable=MagicMock)
-def testDisplayImageResizeError(mock_epd):
+def test_display_image_resize_error(mock_epd):
     """Test handling of resize errors."""
     display = PyInkDisplay()
     display.epd = mock_epd
@@ -105,7 +105,7 @@ def testDisplayImageResizeError(mock_epd):
 
 
 @patch.object(PyInkDisplay, 'epd', new_callable=MagicMock)
-def testCloseDisplay(mock_epd):
+def test_close_display(mock_epd):
     """Test closing the display."""
     display = PyInkDisplay()
     display.epd = mock_epd
@@ -115,7 +115,7 @@ def testCloseDisplay(mock_epd):
     mock_epd.close.assert_called_once()
 
 
-def testCloseDisplayNoEpd():
+def test_close_display_no_epd():
     """Test closing display when none is loaded."""
     display = PyInkDisplay()
 
@@ -124,7 +124,7 @@ def testCloseDisplayNoEpd():
 
 
 @patch('pyInkDisplay.fetchImageFromUrl')
-def testFetchImageFromUrlWrapper(mock_fetch):
+def test_fetch_image_from_url_wrapper(mock_fetch):
     """Test the wrapper method for fetching images."""
     mock_image = MagicMock()
     mock_fetch.return_value = mock_image

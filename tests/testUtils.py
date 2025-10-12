@@ -29,11 +29,12 @@ import pytest
 from unittest.mock import patch, MagicMock
 from PIL import Image
 import tenacity
+import requests
 import utils
 
 
 @patch('utils.requests.get')
-def testFetchImageFromUrlSuccess(mock_get):
+def test_fetch_image_from_url_success(mock_get):
     """Test successful image fetching."""
     mock_response = MagicMock()
     mock_response.raise_for_status.return_value = None
@@ -51,7 +52,7 @@ def testFetchImageFromUrlSuccess(mock_get):
 
 
 @patch('utils.requests.get')
-def testFetchImageFromUrlRequestException(mock_get):
+def test_fetch_image_from_url_request_exception(mock_get):
     """Test handling of request exceptions."""
     mock_get.side_effect = requests.exceptions.RequestException("Network error")
 
@@ -62,7 +63,7 @@ def testFetchImageFromUrlRequestException(mock_get):
 
 
 @patch('utils.requests.get')
-def testFetchImageFromUrlImageOpenError(mock_get):
+def test_fetch_image_from_url_image_open_error(mock_get):
     """Test handling of image open errors."""
     mock_response = MagicMock()
     mock_response.raise_for_status.return_value = None
@@ -76,7 +77,7 @@ def testFetchImageFromUrlImageOpenError(mock_get):
         # Should return default image on error
 
 
-def testCreateDefaultImage():
+def test_create_default_image():
     """Test creation of default image."""
     image = utils._createDefaultImage()
 

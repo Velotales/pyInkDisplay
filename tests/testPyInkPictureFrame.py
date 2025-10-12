@@ -31,7 +31,7 @@ import yaml
 from pyInkPictureFrame import loadConfig, parseArguments, mergeArgsAndConfig, setupLogging
 
 
-def testLoadConfigSuccess():
+def test_load_config_success():
     """Test loading valid config."""
     config_data = {'epd': 'test', 'url': 'http://example.com'}
     mock_file = mock_open(read_data=yaml.dump(config_data))
@@ -42,7 +42,7 @@ def testLoadConfigSuccess():
         assert result == config_data
 
 
-def testLoadConfigFileNotFound():
+def test_load_config_file_not_found():
     """Test handling of missing config file."""
     with patch('builtins.open', side_effect=FileNotFoundError):
         result = loadConfig('missing.yaml')
@@ -50,7 +50,7 @@ def testLoadConfigFileNotFound():
         assert result == {}
 
 
-def testLoadConfigInvalidYaml():
+def test_load_config_invalid_yaml():
     """Test handling of invalid YAML."""
     with patch('builtins.open', mock_open(read_data='invalid: yaml: content: [')):
         result = loadConfig('config.yaml')
@@ -59,7 +59,7 @@ def testLoadConfigInvalidYaml():
 
 
 @patch('pyInkPictureFrame.argparse.ArgumentParser.parse_args')
-def testParseArguments(mock_parse):
+def test_parse_arguments(mock_parse):
     """Test argument parsing."""
     mock_parse.return_value = MagicMock(epd='test', url='http://example.com', alarmMinutes=20, noShutdown=False, config=None)
 
@@ -68,7 +68,7 @@ def testParseArguments(mock_parse):
     assert args.epd == 'test'
 
 
-def testMergeArgsAndConfig():
+def test_merge_args_and_config():
     """Test merging args and config."""
     args = MagicMock(epd='arg_epd', url='arg_url', alarmMinutes=30, noShutdown=True, config=None, logging=None)
     config = {'epd': 'config_epd', 'url': 'config_url', 'alarmMinutes': 40, 'noShutdown': False, 'logging': {'type': 'console'}}
@@ -82,7 +82,7 @@ def testMergeArgsAndConfig():
 
 
 @patch('pyInkPictureFrame.logging.basicConfig')
-def testSetupLoggingConsole(mock_basic):
+def test_setup_logging_console(mock_basic):
     """Test console logging setup."""
     setupLogging({'type': 'console'})
 
@@ -90,7 +90,7 @@ def testSetupLoggingConsole(mock_basic):
 
 
 @patch('pyInkPictureFrame.logging.basicConfig')
-def testSetupLoggingDefault(mock_basic):
+def test_setup_logging_default(mock_basic):
     """Test default logging setup."""
     setupLogging(None)
 
