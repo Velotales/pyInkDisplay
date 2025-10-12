@@ -33,10 +33,28 @@ import sys
 import subprocess
 import yaml
 import time
+import signal
 
 from pyInkDisplay import PyInkDisplay, EPDNotFoundError
 from pySugarAlarm import PiSugarAlarm
 from utils import fetchImageFromUrl
+
+# Global variables for signal handler access
+displayManager = None
+alarmManager = None
+
+def signalHandler(sig, frame):
+    """
+    Signal handler for SIGINT (Ctrl+C) and SIGTERM to ensure clean GPIO shutdown.
+    Cleans up display and alarm managers before exiting.
+    """
+    logging.info(f"Signal {sig} received. Performing cleanup...")
+    if displayManager:
+        displayManager.closeDisplay()
+        logging.info("Display cleaned up.")
+    # PiSugar alarm manager doesn't require explicit GPIO cleanup in this setup, but add if needed
+    logging.info("Exiting gracefully.")
+    sys.exit(0)
 
 def loadConfig(configPath):
     """
@@ -165,6 +183,12 @@ def pyInkPictureFrame():
     """
     Main function to display image on EPD and set PiSugar alarm.
     """
+    global displayManager, alarmManager  # Allow signal handler access
+
+    # Set up signal handlers for clean shutdown
+    signal.signal(signal.SIGINT, signalHandler)  # Ctrl+C
+    signal.signal(signal.SIGTERM, signalHandler)  # Termination signal
+
     args = parseArguments()
     config = loadConfig(args.config) if args.config else {}
     merged = mergeArgsAndConfig(args, config)
@@ -177,21 +201,15 @@ def pyInkPictureFrame():
         logging.error("Image URL must be specified via --url or in the config file.")
         sys.exit(1)
 
-    displayManager = None
-    alarmManager = None
-
     try:
         displayManager = PyInkDisplay(epd_type=merged["epd"])
         logging.info("Attempting to fetch image from URL: %s", merged["url"])
         image = fetchImageFromUrl(merged["url"])
 
-        if image:
-            logging.info("Image fetched successfully. Displaying on EPD.")
-            displayManager.displayImage(image)
-            logging.info("Image displayed on EPD.")
-        else:
-            logging.error("Failed to fetch image. Skipping EPD display.")
-            sys.exit(1)
+        # Note: fetchImageFromUrl now returns a default image on failure, so this always succeeds
+        logging.info("Image fetched successfully (or fallback used). Displaying on EPD.")
+        displayManager.displayImage(image)
+        logging.info("Image displayed on EPD.")
 
         alarmManager = PiSugarAlarm()
         secondsInFuture = merged["alarmMinutes"] * 60

@@ -17,5 +17,5 @@ pisugar
 #For YAML configs
 PyYAML
 
-# Loki logging support
-#loki-logger-handler
+# For retries in image fetching
+tenacity
