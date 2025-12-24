@@ -5,7 +5,40 @@ My need was to display a Home Assistant dashboard on an e-ink display
 ![image](https://github.com/user-attachments/assets/8d20875c-5dad-4961-9875-134c08eebf63)
 
 ## Details
-This project takes an image, either locally, or remotaly, and displays it on an e-ink display.
+This project takes an image, either locally or remotely, and displays it on an e-ink display.
+
+## Home Assistant & MQTT Integration
+
+This project supports publishing the PiSugar battery level to Home Assistant via MQTT, using Home Assistant's MQTT Discovery feature. This allows you to monitor the battery level as a sensor in Home Assistant with no manual YAML configuration.
+
+### How it works
+- The battery level is published to an MQTT topic after each update.
+- On startup, a Home Assistant MQTT Discovery message is sent, so Home Assistant will automatically create a `sensor.pisugar_battery` entity.
+
+### Configuration
+Edit your `config/config.yaml` (or `config/config_local.yaml` for local, uncommitted settings) to include the `mqtt` section:
+
+```yaml
+mqtt:
+	host: "localhost"   # MQTT broker address
+	port: 1883           # MQTT broker port
+	topic: "homeassistant/sensor/pisugar_battery/state"  # MQTT topic for battery level
+	username: ""         # Optional: MQTT username
+	password: ""         # Optional: MQTT password
+```
+
+If MQTT is configured, the battery level will be published and Home Assistant will auto-discover the sensor.
+
+### Home Assistant Setup
+1. Make sure the [MQTT integration](https://www.home-assistant.io/integrations/mqtt/) is enabled in Home Assistant and connected to your broker.
+2. Start the pyInkDisplay service. You should see a new entity called `sensor.pisugar_battery` in Home Assistant.
+3. The battery level will update after each display refresh.
+
+### Troubleshooting
+- Check the logs for MQTT connection errors.
+- Use the provided `mqtt_test.py` to verify your MQTT broker and Home Assistant discovery setup.
+
+---
 
 This was written for a Raspberry Pi Zero W 2, using Waveshare's 7.3 inch 7 color e-ink display.
 

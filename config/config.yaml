@@ -8,11 +8,11 @@ alarmMinutes: 2
 noShutdown: false
 # MQTT configuration for Home Assistant integration
 mqtt:
-	host: "localhost"   # MQTT broker address
-	port: 1883           # MQTT broker port
-	topic: "homeassistant/sensor/pisugar_battery/state"  # MQTT topic for battery level
-	username: ""         # Optional: MQTT username
-	password: ""         # Optional: MQTT password
+  host: "localhost"   # MQTT broker address
+  port: 1883           # MQTT broker port
+  topic: "homeassistant/sensor/pisugar_battery/state"  # MQTT topic for battery level
+  username: ""         # Optional: MQTT username
+  password: ""         # Optional: MQTT password
 #logging:
 #  type: "loki"  # Use "console" for console logging, "loki" for Loki remote logging
 #  url: "http://localhost:3100/loki/api/v1/push"  # Loki endpoint (required if type is loki)

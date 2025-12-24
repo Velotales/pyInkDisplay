@@ -21,12 +21,8 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-pyInkPictureFrame.py
 
-This is the main entry point for the pyInkPictureFrame project. It parses arguments, loads configuration, sets up logging,
-initializes the display and alarm managers, and orchestrates picture frame operation.
 """
-
 
 import argparse
 import logging
@@ -284,6 +280,8 @@ def pyInkPictureFrame():
         if displayManager:
             displayManager.closeDisplay()
             logging.info("EPD display closed.")
+
+__all__ = ["pyInkPictureFrame"]
 
 if __name__ == "__main__":
     pyInkPictureFrame()
