@@ -325,4 +325,4 @@ class PiSugarAlarm:
                 raise PiSugarError(f"Failed to set next alarm: {e}")
         else:
             logger.error("Error: Could not determine next alarm time. Exiting.")
-            raise PiSugarError(f"Failed to set next alarm time: {e}")
+            raise PiSugarError("Failed to set next alarm time: Could not determine next alarm datetime.")
