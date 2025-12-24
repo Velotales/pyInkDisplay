@@ -11,3 +11,4 @@ build
 twine
 pillow
 click==8.1.8
+coverage==7.10.7
