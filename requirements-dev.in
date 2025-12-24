@@ -4,7 +4,7 @@ pytest-mock
 pytest-cov
 black==23.12.1
 flake8
-isort
+isort==6.1.0
 bandit==1.8.6
 mypy
 build
@@ -14,3 +14,4 @@ click==8.1.8
 coverage==7.10.7
 iniconfig==2.1.0
 tenacity
+pytz
