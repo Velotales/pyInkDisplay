@@ -1,3 +1,5 @@
+markdown-it-py==3.0.0
+paho-mqtt
 # Development dependencies for testing and QA
 pytest
 pytest-mock
