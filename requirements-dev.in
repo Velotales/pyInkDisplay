@@ -11,7 +11,7 @@ bandit==1.8.6
 mypy
 build
 twine
-pillow
+pillow==11.3.0
 click==8.1.8
 coverage==7.10.7
 iniconfig==2.1.0

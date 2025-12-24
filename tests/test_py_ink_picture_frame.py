@@ -38,7 +38,7 @@ from pyinkdisplay.pyInkPictureFrame import (
 def test_loadConfig_success():
     """Test loading config from YAML file."""
     with patch("builtins.open") as mock_open, patch(
-        "pyInkPictureFrame.yaml.safe_load"
+        "pyinkdisplay.pyInkPictureFrame.yaml.safe_load"
     ) as mock_yaml_load:
         mock_yaml_load.return_value = {"key": "value"}
 
@@ -57,7 +57,7 @@ def test_loadConfig_file_not_found():
 
 def test_parseArguments():
     """Test parsing command line arguments."""
-    with patch("pyInkPictureFrame.argparse.ArgumentParser") as mock_parser:
+    with patch("pyinkdisplay.pyInkPictureFrame.argparse.ArgumentParser") as mock_parser:
         mock_args = MagicMock()
         mock_parser.return_value.parse_args.return_value = mock_args
 
@@ -84,7 +84,7 @@ def test_mergeArgsAndConfig():
 
 def test_setupLogging():
     """Test setting up logging."""
-    with patch("pyInkPictureFrame.logging.basicConfig") as mock_basic_config:
+    with patch("pyinkdisplay.pyInkPictureFrame.logging.basicConfig") as mock_basic_config:
         setupLogging({"level": "INFO"})
 
         mock_basic_config.assert_called_once()

@@ -33,9 +33,9 @@ import pyinkdisplay.utils
 
 def test_fetchImageFromUrl_success():
     """Test successful image download from URL."""
-    with patch("utils.requests.get") as mock_get, patch(
-        "utils.BytesIO"
-    ) as mock_bytesio, patch("utils.Image.open") as mock_image_open:
+    with patch("pyinkdisplay.utils.requests.get") as mock_get, patch(
+        "pyinkdisplay.utils.BytesIO"
+    ) as mock_bytesio, patch("pyinkdisplay.utils.Image.open") as mock_image_open:
         mock_response = MagicMock()
         mock_response.content = b"fake image data"
         mock_response.raise_for_status = MagicMock()
@@ -58,8 +58,8 @@ def test_fetchImageFromUrl_success():
 
 def test_fetchImageFromUrl_failure():
     """Test failure in image download, returns default image."""
-    with patch("utils.requests.get") as mock_get, patch(
-        "utils._createDefaultImage"
+    with patch("pyinkdisplay.utils.requests.get") as mock_get, patch(
+        "pyinkdisplay.utils._createDefaultImage"
     ) as mock_default:
         mock_get.side_effect = Exception("Network error")
 
@@ -74,8 +74,8 @@ def test_fetchImageFromUrl_failure():
 
 def test_createDefaultImage():
     """Test creating a default fallback image."""
-    with patch("utils.Image.new") as mock_image_new, patch(
-        "utils.ImageDraw.Draw"
+    with patch("pyinkdisplay.utils.Image.new") as mock_image_new, patch(
+        "pyinkdisplay.utils.ImageDraw.Draw"
     ) as mock_draw:
         mock_image = MagicMock()
         mock_image_new.return_value = mock_image
