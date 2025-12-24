@@ -8,7 +8,7 @@ on:
 
 jobs:
   compile:
-    name: Deps: Compile
+    name: "Deps: Compile"
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repo
@@ -38,7 +38,7 @@ jobs:
             requirements-dev.txt
 
   lint:
-    name: QA: Lint & Types (Ubuntu)
+    name: "QA: Lint & Types (Ubuntu)"
     needs: compile
     runs-on: ubuntu-latest
     strategy:
@@ -79,7 +79,7 @@ jobs:
         run: mypy --ignore-missing-imports pyinkdisplay
 
   tests-ubuntu:
-    name: Tests: Ubuntu (mocked deps)
+    name: "Tests: Ubuntu (mocked deps)"
     needs: compile
     runs-on: ubuntu-latest
     steps:
@@ -105,7 +105,7 @@ jobs:
         run: pytest -q
 
   tests-arm:
-    name: Tests: Raspberry Pi (optional)
+    name: "Tests: Raspberry Pi (optional)"
     needs: compile
     if: github.event_name != 'pull_request'
     continue-on-error: true

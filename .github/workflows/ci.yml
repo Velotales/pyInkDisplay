@@ -8,7 +8,7 @@ on:
 
 jobs:
   config-validation:
-    name: Config: Validate YAML
+    name: "Config: Validate YAML"
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
@@ -60,7 +60,7 @@ jobs:
         "
 
   license-check:
-    name: Compliance: License Headers
+    name: "Compliance: License Headers"
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
@@ -85,7 +85,7 @@ jobs:
         fi
 
   build-check:
-    name: Build: Package Check
+    name: "Build: Package Check"
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
