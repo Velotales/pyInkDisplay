@@ -25,7 +25,8 @@ SOFTWARE.
 """
 
 import logging
-from omni_epd import displayfactory, EPDNotFoundError
+
+from omni_epd import EPDNotFoundError, displayfactory
 from PIL import Image
 
 logger = logging.getLogger(__name__)

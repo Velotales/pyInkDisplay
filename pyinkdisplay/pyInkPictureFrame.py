@@ -26,19 +26,18 @@ SOFTWARE.
 
 import argparse
 import logging
-import sys
-import subprocess
-import yaml
-import time
 import signal
+import subprocess
+import sys
+import time
 
 import paho.mqtt.client as mqtt
-from .mqttDiscovery import publishHaBatteryDiscovery
+import yaml
 
-from .pyInkDisplay import PyInkDisplay, EPDNotFoundError
+from .mqttDiscovery import publishHaBatteryDiscovery
+from .pyInkDisplay import EPDNotFoundError, PyInkDisplay
 from .pySugarAlarm import PiSugarAlarm
 from .utils import fetchImageFromUrl
-
 
 # Global variables for signal handler access
 displayManager = None

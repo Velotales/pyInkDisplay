@@ -24,12 +24,13 @@ SOFTWARE.
 
 """
 
-import requests
-import time
-import sys
-from datetime import datetime, timedelta
-import pytz
 import logging
+import sys
+import time
+from datetime import datetime, timedelta
+
+import pytz
+import requests
 
 logger = logging.getLogger(__name__)
 

@@ -25,12 +25,13 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-import requests
 import logging
-from PIL import Image, ImageDraw
 from io import BytesIO
 from typing import Optional
+
+import requests
 import tenacity
+from PIL import Image, ImageDraw
 
 logger = logging.getLogger(__name__)
 

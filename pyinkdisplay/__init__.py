@@ -23,9 +23,9 @@ SOFTWARE.
 
 """
 
-from .pyInkDisplay import PyInkDisplay, EPDNotFoundError
-from .pySugarAlarm import PiSugarAlarm, PiSugarConnectionError, PiSugarError
 from . import utils
+from .pyInkDisplay import EPDNotFoundError, PyInkDisplay
+from .pySugarAlarm import PiSugarAlarm, PiSugarConnectionError, PiSugarError
 
 __all__ = [
     "PyInkDisplay",
