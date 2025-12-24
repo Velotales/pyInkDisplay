@@ -1,3 +1,11 @@
-# Development dependencies for testing
+# Development dependencies for testing and QA
 pytest
 pytest-mock
+pytest-cov
+black
+flake8
+isort
+bandit
+mypy
+build
+twine
