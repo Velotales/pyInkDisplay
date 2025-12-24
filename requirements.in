@@ -21,3 +21,6 @@ tenacity
 
 # For MQTT support
 paho-mqtt
+
+# PIL for image handling in tests and runtime
+pillow
