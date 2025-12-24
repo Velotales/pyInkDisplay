@@ -27,8 +27,9 @@ Unit tests for utils.py
 
 import pytest
 from unittest.mock import patch, MagicMock
+
 from PIL import Image
-import pyinkdisplay.utils
+import pyinkdisplay.utils as utils
 
 
 def test_fetchImageFromUrl_success():
