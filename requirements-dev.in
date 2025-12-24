@@ -2,7 +2,7 @@
 pytest
 pytest-mock
 pytest-cov
-black
+black==23.12.1
 flake8
 isort
 bandit==1.8.6
