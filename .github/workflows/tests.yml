@@ -78,6 +78,32 @@ jobs:
       - name: Mypy (ignore missing imports)
         run: mypy --ignore-missing-imports pyinkdisplay
 
+  tests-ubuntu:
+    name: Tests (Ubuntu, mocked deps)
+    needs: compile
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Download compiled requirements
+        uses: actions/download-artifact@v4
+        with:
+          name: compiled-requirements
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dev dependencies only
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+
+      - name: Run tests with mocked hardware dependencies
+        run: pytest -q
+
   tests-arm:
     name: Tests (Raspberry Pi/self-hosted)
     needs: compile
