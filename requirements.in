@@ -1,4 +1,3 @@
-
 #These to get waveshare working
 waveshare-epd @ git+https://github.com/waveshareteam/e-Paper.git#subdirectory=RaspberryPi_JetsonNano/python
 RPi.GPIO
@@ -19,3 +18,6 @@ PyYAML
 
 # For retries in image fetching
 tenacity
+
+# For MQTT support
+paho-mqtt

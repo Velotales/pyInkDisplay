@@ -27,6 +27,7 @@ This is the main entry point for the pyInkPictureFrame project. It parses argume
 initializes the display and alarm managers, and orchestrates picture frame operation.
 """
 
+
 import argparse
 import logging
 import sys
@@ -35,9 +36,13 @@ import yaml
 import time
 import signal
 
+import paho.mqtt.client as mqtt
+from .mqttDiscovery import publishHaBatteryDiscovery
+
 from .pyInkDisplay import PyInkDisplay, EPDNotFoundError
 from .pySugarAlarm import PiSugarAlarm
 from .utils import fetchImageFromUrl
+
 
 # Global variables for signal handler access
 displayManager = None
@@ -130,7 +135,31 @@ def setupLogging(loggingConfig):
     )
     logging.info("Console logging enabled.")
 
-def continuousEpdUpdateLoop(displayManager, alarmManager, imageUrl, alarmMinutes):
+def publishBatteryLevel(alarmManager, mqttConfig):
+    """
+    Publishes the PiSugar battery level to the configured MQTT broker.
+    """
+    try:
+        batteryLevel = alarmManager.get_battery_level()
+    except Exception as e:
+        logging.error(f"Failed to get battery level for MQTT publish: {e}")
+        return
+    if not mqttConfig:
+        logging.warning("No MQTT config provided, skipping battery publish.")
+        return
+    try:
+        client = mqtt.Client()
+        if mqttConfig.get('username'):
+            client.username_pw_set(mqttConfig.get('username'), mqttConfig.get('password', ''))
+        client.connect(mqttConfig.get('host', 'localhost'), int(mqttConfig.get('port', 1883)), 60)
+        topic = mqttConfig.get('topic', 'homeassistant/sensor/pisugar_battery/state')
+        client.publish(topic, str(batteryLevel), retain=True)
+        client.disconnect()
+        logging.info(f"Published battery level {batteryLevel}% to MQTT topic {topic}")
+    except Exception as e:
+        logging.error(f"Failed to publish battery level to MQTT: {e}")
+
+def continuousEpdUpdateLoop(displayManager, alarmManager, imageUrl, alarmMinutes, mqttConfig=None):
     """
     Continuously update the e-ink display at the specified interval while power is present.
 
@@ -157,10 +186,14 @@ def continuousEpdUpdateLoop(displayManager, alarmManager, imageUrl, alarmMinutes
                 keepRunningOnPower = False
                 break
 
+
         secondsInFuture = alarmMinutes * 60
         logging.info("Attempting to set PiSugar alarm for %d minutes (%d seconds) in the future.", alarmMinutes, secondsInFuture)
         alarmManager.setAlarm(secondsInFuture=secondsInFuture)
         logging.info("PiSugar alarm setting process completed.")
+
+        # Publish battery level to MQTT after each update
+        publishBatteryLevel(alarmManager, mqttConfig)
 
         if not keepRunningOnPower:
             break
@@ -192,7 +225,13 @@ def pyInkPictureFrame():
     args = parseArguments()
     config = loadConfig(args.config) if args.config else {}
     merged = mergeArgsAndConfig(args, config)
+    mqttConfig = config.get('mqtt') if config else None
+
     setupLogging(merged.get("logging"))
+
+    # Publish Home Assistant MQTT discovery if MQTT is configured
+    if mqttConfig:
+        publishHaBatteryDiscovery(mqttConfig)
 
     if not merged.get("epd"):
         logging.error("EPD type must be specified via --epd or in the config file.")
@@ -202,6 +241,7 @@ def pyInkPictureFrame():
         sys.exit(1)
 
     try:
+
         displayManager = PyInkDisplay(epd_type=merged["epd"])
         logging.info("Attempting to fetch image from URL: %s", merged["url"])
         image = fetchImageFromUrl(merged["url"])
@@ -217,9 +257,12 @@ def pyInkPictureFrame():
         alarmManager.setAlarm(secondsInFuture=secondsInFuture)
         logging.info("PiSugar alarm setting process completed.")
 
+        # Publish battery level to MQTT at startup
+        publishBatteryLevel(alarmManager, mqttConfig)
+
         if alarmManager.isSugarPowered():
             logging.info("PiSugar is currently powered. Entering continuous EPD update mode.")
-            continuousEpdUpdateLoop(displayManager, alarmManager, merged["url"], merged["alarmMinutes"])
+            continuousEpdUpdateLoop(displayManager, alarmManager, merged["url"], merged["alarmMinutes"], mqttConfig)
         elif not merged["noShutdown"]:
             logging.info("All tasks completed. Shutting down the system...")
             try:

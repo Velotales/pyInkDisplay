@@ -72,6 +72,34 @@ class PiSugarAlarm:
     checks, RTC synchronization, and alarm setting.
     """
 
+    def get_battery_level(self, retries=3, delay=2) -> int:
+        """
+        Gets the current battery level (percentage) from the PiSugar board.
+        Returns:
+            int: Battery level percentage (0-100)
+        Raises:
+            PiSugarConnectionError: If connection to PiSugar cannot be established.
+            PiSugarError: If there's an error retrieving battery level from PiSugar.
+        """
+        lastException = None
+        for attempt in range(1, retries + 1):
+            try:
+                self._ensurePiSugarConnection()
+                level = self.pisugar.get_battery_level()
+                logger.info(f"PiSugar battery level: {level}%")
+                return level
+            except PiSugarConnectionError:
+                logger.error("Cannot check battery level: Not connected to PiSugar. Please ensure pisugar-server is running.")
+                lastException = PiSugarConnectionError("Not connected to PiSugar.")
+            except Exception as e:
+                logger.warning(f"Attempt {attempt} failed to get battery level from PiSugar: {e}")
+                lastException = PiSugarError(f"Error getting battery level from PiSugar: {e}")
+            if attempt < retries:
+                logger.info(f"Retrying get_battery_level in {delay} seconds (attempt {attempt+1}/{retries})...")
+                time.sleep(delay)
+        logger.error(f"get_battery_level failed after {retries} attempts.")
+        raise lastException
+
     # Class-level constants for network check
     _defaultPingUrl = "http://clients3.google.com/generate_204"
 
