@@ -25,12 +25,13 @@ SOFTWARE.
 import json
 import paho.mqtt.client as mqtt
 
+
 def publishHaBatteryDiscovery(mqtt_config):
     """
     Publishes Home Assistant MQTT discovery message for PiSugar battery sensor.
     """
     DISCOVERY_TOPIC = "homeassistant/sensor/pisugar_battery/config"
-    STATE_TOPIC = mqtt_config.get('topic', 'homeassistant/sensor/pisugar_battery/state')
+    STATE_TOPIC = mqtt_config.get("topic", "homeassistant/sensor/pisugar_battery/state")
     payload = {
         "name": "PiSugar Battery",
         "state_topic": STATE_TOPIC,
@@ -41,14 +42,18 @@ def publishHaBatteryDiscovery(mqtt_config):
             "identifiers": ["pisugar_1"],
             "name": "PiSugar UPS",
             "model": "PiSugar3",
-            "manufacturer": "PiSugar"
-        }
+            "manufacturer": "PiSugar",
+        },
     }
     client = mqtt.Client(protocol=mqtt.MQTTv5)
-    if mqtt_config.get('username'):
-        client.username_pw_set(mqtt_config.get('username'), mqtt_config.get('password', ''))
+    if mqtt_config.get("username"):
+        client.username_pw_set(
+            mqtt_config.get("username"), mqtt_config.get("password", "")
+        )
     try:
-        client.connect(mqtt_config.get('host', 'localhost'), int(mqtt_config.get('port', 1883)), 60)
+        client.connect(
+            mqtt_config.get("host", "localhost"), int(mqtt_config.get("port", 1883)), 60
+        )
         client.loop_start()
         client.publish(DISCOVERY_TOPIC, json.dumps(payload), retain=True)
         client.loop_stop()

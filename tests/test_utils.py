@@ -33,11 +33,11 @@ import pyinkdisplay.utils
 
 def test_fetchImageFromUrl_success():
     """Test successful image download from URL."""
-    with patch('utils.requests.get') as mock_get, \
-         patch('utils.BytesIO') as mock_bytesio, \
-         patch('utils.Image.open') as mock_image_open:
+    with patch("utils.requests.get") as mock_get, patch(
+        "utils.BytesIO"
+    ) as mock_bytesio, patch("utils.Image.open") as mock_image_open:
         mock_response = MagicMock()
-        mock_response.content = b'fake image data'
+        mock_response.content = b"fake image data"
         mock_response.raise_for_status = MagicMock()
         mock_get.return_value = mock_response
 
@@ -47,25 +47,26 @@ def test_fetchImageFromUrl_success():
         mock_image = MagicMock()
         mock_image_open.return_value = mock_image
 
-        result = utils.fetchImageFromUrl('http://example.com/image.jpg')
+        result = utils.fetchImageFromUrl("http://example.com/image.jpg")
 
-        mock_get.assert_called_once_with('http://example.com/image.jpg', timeout=10)
+        mock_get.assert_called_once_with("http://example.com/image.jpg", timeout=10)
         mock_response.raise_for_status.assert_called_once()
-        mock_bytesio.assert_called_once_with(b'fake image data')
+        mock_bytesio.assert_called_once_with(b"fake image data")
         mock_image_open.assert_called_once_with(mock_bytesio_instance)
         assert result == mock_image
 
 
 def test_fetchImageFromUrl_failure():
     """Test failure in image download, returns default image."""
-    with patch('utils.requests.get') as mock_get, \
-         patch('utils._createDefaultImage') as mock_default:
+    with patch("utils.requests.get") as mock_get, patch(
+        "utils._createDefaultImage"
+    ) as mock_default:
         mock_get.side_effect = Exception("Network error")
 
         mock_default_image = MagicMock()
         mock_default.return_value = mock_default_image
 
-        result = utils.fetchImageFromUrl('http://example.com/image.jpg')
+        result = utils.fetchImageFromUrl("http://example.com/image.jpg")
 
         assert result == mock_default_image
         mock_default.assert_called_once()
@@ -73,8 +74,9 @@ def test_fetchImageFromUrl_failure():
 
 def test_createDefaultImage():
     """Test creating a default fallback image."""
-    with patch('utils.Image.new') as mock_image_new, \
-         patch('utils.ImageDraw.Draw') as mock_draw:
+    with patch("utils.Image.new") as mock_image_new, patch(
+        "utils.ImageDraw.Draw"
+    ) as mock_draw:
         mock_image = MagicMock()
         mock_image_new.return_value = mock_image
 
@@ -83,7 +85,7 @@ def test_createDefaultImage():
 
         result = utils._createDefaultImage(800, 480)
 
-        mock_image_new.assert_called_once_with('1', (800, 480), 0)
+        mock_image_new.assert_called_once_with("1", (800, 480), 0)
         mock_draw.assert_called_once_with(mock_image)
         mock_draw_instance.text.assert_called_once()
         assert result == mock_image

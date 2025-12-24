@@ -31,20 +31,20 @@ from PIL import Image
 from pyinkdisplay.pyInkDisplay import PyInkDisplay, EPDNotFoundError
 
 
-@patch('omni_epd.displayfactory.load_display_driver')
+@patch("omni_epd.displayfactory.load_display_driver")
 def test_load_display_driver_success(mock_load):
     """Test successful display driver loading."""
     mock_epd = MagicMock()
     mock_load.return_value = mock_epd
 
     display = PyInkDisplay()
-    display.loadDisplayDriver('test_driver')
+    display.loadDisplayDriver("test_driver")
 
-    mock_load.assert_called_once_with('test_driver')
+    mock_load.assert_called_once_with("test_driver")
     assert display.epd == mock_epd
 
 
-@patch('omni_epd.displayfactory.load_display_driver')
+@patch("omni_epd.displayfactory.load_display_driver")
 def test_load_display_driver_not_found(mock_load):
     """Test handling of EPD not found."""
     mock_load.side_effect = EPDNotFoundError("Driver not found")
@@ -52,10 +52,10 @@ def test_load_display_driver_not_found(mock_load):
     display = PyInkDisplay()
 
     with pytest.raises(EPDNotFoundError):
-        display.loadDisplayDriver('invalid_driver')
+        display.loadDisplayDriver("invalid_driver")
 
 
-@patch('omni_epd.displayfactory.load_display_driver')
+@patch("omni_epd.displayfactory.load_display_driver")
 def test_load_display_driver_general_error(mock_load):
     """Test handling of general errors in display driver loading."""
     mock_load.side_effect = Exception("General error")
@@ -63,7 +63,7 @@ def test_load_display_driver_general_error(mock_load):
     display = PyInkDisplay()
 
     with pytest.raises(Exception):
-        display.loadDisplayDriver('test_driver')
+        display.loadDisplayDriver("test_driver")
 
 
 def test_display_image_success():
@@ -73,7 +73,7 @@ def test_display_image_success():
     display.epd.width = 100
     display.epd.height = 100
 
-    image = Image.new('RGB', (100, 100))
+    image = Image.new("RGB", (100, 100))
 
     display.displayImage(image)
 
@@ -86,7 +86,7 @@ def test_display_image_no_epd():
     """Test display image without loaded EPD."""
     display = PyInkDisplay()
 
-    image = Image.new('RGB', (100, 100))
+    image = Image.new("RGB", (100, 100))
 
     with pytest.raises(RuntimeError, match="EPD driver not loaded"):
         display.displayImage(image)
@@ -97,7 +97,7 @@ def test_display_image_resize_error():
     display = PyInkDisplay()
     display.epd = MagicMock()
 
-    image = Image.new('RGB', (100, 100))
+    image = Image.new("RGB", (100, 100))
     image.resize = MagicMock(side_effect=Exception("Resize error"))
 
     display.displayImage(image)

@@ -30,12 +30,12 @@ from unittest.mock import patch, MagicMock
 from pyinkdisplay.pySugarAlarm import PiSugarAlarm
 
 
-@patch('pySugarAlarm.connect_tcp')
-@patch('pySugarAlarm.PiSugarServer')
+@patch("pySugarAlarm.connect_tcp")
+@patch("pySugarAlarm.PiSugarServer")
 def test_set_alarm(mock_pisugar_server, mock_connect_tcp):
     """Test setting an alarm."""
     # Mock network check
-    with patch('pySugarAlarm.requests.get') as mock_requests_get:
+    with patch("pySugarAlarm.requests.get") as mock_requests_get:
         mock_response = MagicMock()
         mock_response.status_code = 204
         mock_requests_get.return_value = mock_response
@@ -61,8 +61,8 @@ def test_set_alarm(mock_pisugar_server, mock_connect_tcp):
             pytest.fail(f"setAlarm raised an exception: {e}")
 
 
-@patch('pySugarAlarm.connect_tcp')
-@patch('pySugarAlarm.PiSugarServer')
+@patch("pySugarAlarm.connect_tcp")
+@patch("pySugarAlarm.PiSugarServer")
 def test_is_sugar_powered(mock_pisugar_server, mock_connect_tcp):
     """Test checking if PiSugar is powered."""
     # Mock connection

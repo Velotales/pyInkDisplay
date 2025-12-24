@@ -23,9 +23,12 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
+
 def main():
     from .pyInkPictureFrame import pyInkPictureFrame
+
     pyInkPictureFrame()
+
 
 if __name__ == "__main__":
     main()

@@ -43,28 +43,39 @@ except ImportError:
     class PiSugarServer:
         def __init__(self, *args, **kwargs):
             logger.warning("Dummy PiSugarServer initialized. PiSugar module not found.")
+
         def get_rtc_time(self):
             raise PiSugarConnectionError("PiSugar module not available.")
+
         def get_battery_power_plugged(self):
             raise PiSugarConnectionError("PiSugar module not available.")
+
         def rtc_pi2rtc(self):
             raise PiSugarConnectionError("PiSugar module not available.")
+
         def rtc_alarm_set(self, *args, **kwargs):
             raise PiSugarConnectionError("PiSugar module not available.")
+
     class connect_tcp:
         def __init__(self, *args, **kwargs):
             logger.warning("Dummy connect_tcp initialized. PiSugar module not found.")
+
         def __call__(self):
             return None, None
+
 
 # Custom exceptions for PiSugar operations
 class PiSugarConnectionError(Exception):
     """Raised when there's a problem connecting to or communicating with PiSugar."""
+
     pass
+
 
 class PiSugarError(Exception):
     """Raised for general errors from the PiSugar module."""
+
     pass
+
 
 class PiSugarAlarm:
     """
@@ -89,13 +100,21 @@ class PiSugarAlarm:
                 logger.info(f"PiSugar battery level: {level}%")
                 return level
             except PiSugarConnectionError:
-                logger.error("Cannot check battery level: Not connected to PiSugar. Please ensure pisugar-server is running.")
+                logger.error(
+                    "Cannot check battery level: Not connected to PiSugar. Please ensure pisugar-server is running."
+                )
                 lastException = PiSugarConnectionError("Not connected to PiSugar.")
             except Exception as e:
-                logger.warning(f"Attempt {attempt} failed to get battery level from PiSugar: {e}")
-                lastException = PiSugarError(f"Error getting battery level from PiSugar: {e}")
+                logger.warning(
+                    f"Attempt {attempt} failed to get battery level from PiSugar: {e}"
+                )
+                lastException = PiSugarError(
+                    f"Error getting battery level from PiSugar: {e}"
+                )
             if attempt < retries:
-                logger.info(f"Retrying get_battery_level in {delay} seconds (attempt {attempt+1}/{retries})...")
+                logger.info(
+                    f"Retrying get_battery_level in {delay} seconds (attempt {attempt+1}/{retries})..."
+                )
                 time.sleep(delay)
         logger.error(f"get_battery_level failed after {retries} attempts.")
         raise lastException
@@ -135,7 +154,9 @@ class PiSugarAlarm:
             return False
 
     @staticmethod
-    def _calculateFutureAlarmDatetime(baseDatetime: datetime, secondsInFuture: int) -> datetime:
+    def _calculateFutureAlarmDatetime(
+        baseDatetime: datetime, secondsInFuture: int
+    ) -> datetime:
         """
         Internal static method to calculate a future datetime by adding a specified
         number of seconds to a given base datetime.
@@ -209,12 +230,14 @@ class PiSugarAlarm:
         Raises PiSugarConnectionError if connection fails.
         """
         if self.pisugar is None:
-            logger.info("PiSugar connection not established. Attempting to connect now.")
+            logger.info(
+                "PiSugar connection not established. Attempting to connect now."
+            )
             try:
                 self._connectToPiSugar()
             except PiSugarConnectionError as e:
                 logger.error(f"Failed to establish PiSugar connection: {e}")
-                raise        
+                raise
 
     def isSugarPowered(self, retries=3, delay=2) -> bool:
         """
@@ -237,18 +260,26 @@ class PiSugarAlarm:
                 logger.info(f"PiSugar power plugged status: {isPlugged}")
                 return isPlugged
             except PiSugarConnectionError:
-                logger.error("Cannot check power status: Not connected to PiSugar. Please ensure pisugar-server is running.")
+                logger.error(
+                    "Cannot check power status: Not connected to PiSugar. Please ensure pisugar-server is running."
+                )
                 lastException = PiSugarConnectionError("Not connected to PiSugar.")
             except Exception as e:
-                logger.warning(f"Attempt {attempt} failed to get battery power plugged status from PiSugar: {e}")
-                lastException = PiSugarError(f"Error getting battery power plugged status from PiSugar: {e}")
+                logger.warning(
+                    f"Attempt {attempt} failed to get battery power plugged status from PiSugar: {e}"
+                )
+                lastException = PiSugarError(
+                    f"Error getting battery power plugged status from PiSugar: {e}"
+                )
             if attempt < retries:
-                logger.info(f"Retrying isSugarPowered in {delay} seconds (attempt {attempt+1}/{retries})...")
+                logger.info(
+                    f"Retrying isSugarPowered in {delay} seconds (attempt {attempt+1}/{retries})..."
+                )
                 time.sleep(delay)
         # If we reach here, all attempts failed
         logger.error(f"isSugarPowered failed after {retries} attempts.")
         raise lastException
-            
+
     def setAlarm(self, secondsInFuture: int):
         """
         Main method to set the PiSugar alarm.
@@ -263,7 +294,9 @@ class PiSugarAlarm:
         logger.info("Checking network connectivity...")
         while not self._isOnline(self.pingUrl):
             current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            logger.error(f"{current_time} - Failed test to {self.pingUrl}, waiting for connectivity")
+            logger.error(
+                f"{current_time} - Failed test to {self.pingUrl}, waiting for connectivity"
+            )
             time.sleep(5)
         logger.info("Connected.")
 
@@ -280,9 +313,10 @@ class PiSugarAlarm:
             logger.info(f"Initial RTC time from PiSugar: {initialRtcTime}")
         except Exception as e:
             logger.error(f"Failed to get initial RTC time from PiSugar: {e}")
-            logger.error("Please ensure pisugar-server is running and you have permissions (try with 'sudo'). Exiting.")
+            logger.error(
+                "Please ensure pisugar-server is running and you have permissions (try with 'sudo'). Exiting."
+            )
             raise PiSugarError(f"Failed to set RTC time: {e}")
-
 
         # Sync RTC and get updated time
         try:
@@ -297,32 +331,50 @@ class PiSugarAlarm:
             timezoneOffsetSeconds = localTz.utcoffset(datetime.now()).total_seconds()
             hours = int(timezoneOffsetSeconds // 3600)
             minutes = int((timezoneOffsetSeconds % 3600) // 60)
-            timezoneOffset = f"{'+' if hours >= 0 else '-'}{abs(hours):02d}:{abs(minutes):02d}"
+            timezoneOffset = (
+                f"{'+' if hours >= 0 else '-'}{abs(hours):02d}:{abs(minutes):02d}"
+            )
         except Exception as e:
-            logger.error(f"Could not determine timezone offset: {e}. Defaulting to +00:00.")
+            logger.error(
+                f"Could not determine timezone offset: {e}. Defaulting to +00:00."
+            )
             timezoneOffset = "+00:00"
 
         # Calculate future alarm datetime
         nextAlarmDatetime = None
         try:
-            nextAlarmDatetime = self._calculateFutureAlarmDatetime(rtcDatetime, secondsInFuture)
-            logger.info(f"Calculated next alarm (in {secondsInFuture} seconds): {nextAlarmDatetime.isoformat()}")
+            nextAlarmDatetime = self._calculateFutureAlarmDatetime(
+                rtcDatetime, secondsInFuture
+            )
+            logger.info(
+                f"Calculated next alarm (in {secondsInFuture} seconds): {nextAlarmDatetime.isoformat()}"
+            )
         except ValueError as e:
             logger.error(f"Error calculating future alarm time: {e}. Exiting.")
             raise PiSugarError(f"Failed to set future calculate alarm time: {e}")
 
         # Set the alarm using PiSugar
         if nextAlarmDatetime:
-            nextAlarmFormatted = nextAlarmDatetime.strftime("%Y-%m-%dT%H:%M:%S") + timezoneOffset
+            nextAlarmFormatted = (
+                nextAlarmDatetime.strftime("%Y-%m-%dT%H:%M:%S") + timezoneOffset
+            )
 
             try:
                 # 127 means repeat every day
                 self.pisugar.rtc_alarm_set(nextAlarmDatetime, 127)
-                logger.info(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} - Alarm set for [{nextAlarmFormatted}]")
-            except Exception as e: # Catching a general exception for alarm setting
-                logger.error(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} - Error while setting alarm using PiSugar module: {e}")
-                logger.error("Please ensure pisugar-server is running and you have permissions (try with 'sudo').")
+                logger.info(
+                    f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} - Alarm set for [{nextAlarmFormatted}]"
+                )
+            except Exception as e:  # Catching a general exception for alarm setting
+                logger.error(
+                    f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} - Error while setting alarm using PiSugar module: {e}"
+                )
+                logger.error(
+                    "Please ensure pisugar-server is running and you have permissions (try with 'sudo')."
+                )
                 raise PiSugarError(f"Failed to set next alarm: {e}")
         else:
             logger.error("Error: Could not determine next alarm time. Exiting.")
-            raise PiSugarError("Failed to set next alarm time: Could not determine next alarm datetime.")
+            raise PiSugarError(
+                "Failed to set next alarm time: Could not determine next alarm datetime."
+            )

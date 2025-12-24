@@ -47,9 +47,10 @@ DISCOVERY_PAYLOAD = {
         "identifiers": ["pisugar_1"],
         "name": "PiSugar UPS",
         "model": "PiSugar3",
-        "manufacturer": "PiSugar"
-    }
+        "manufacturer": "PiSugar",
+    },
 }
+
 
 def on_connect(client, userdata, flags, rc, properties=None):
     if rc == 0:
@@ -65,6 +66,7 @@ def on_connect(client, userdata, flags, rc, properties=None):
         print(f"Published test message to {MQTT_TOPIC}")
     else:
         print(f"Failed to connect, return code {rc}")
+
 
 client = mqtt.Client(protocol=mqtt.MQTTv5)
 if MQTT_USERNAME:

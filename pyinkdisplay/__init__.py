@@ -31,7 +31,7 @@ from . import utils
 __all__ = [
     "PyInkDisplay",
     "EPDNotFoundError",
-    "PiSugarAlarm", 
+    "PiSugarAlarm",
     "PiSugarConnectionError",
     "PiSugarError",
     "utils",

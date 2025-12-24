@@ -30,6 +30,7 @@ from PIL import Image
 
 logger = logging.getLogger(__name__)
 
+
 class PyInkDisplay:
     """
     A class to manage and display images on E-Paper displays (EPD) using omni_epd.

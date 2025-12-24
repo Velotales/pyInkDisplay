@@ -27,31 +27,37 @@ Unit tests for pyInkPictureFrame.py
 
 import pytest
 from unittest.mock import patch, MagicMock
-from pyinkdisplay.pyInkPictureFrame import loadConfig, parseArguments, mergeArgsAndConfig, setupLogging
+from pyinkdisplay.pyInkPictureFrame import (
+    loadConfig,
+    parseArguments,
+    mergeArgsAndConfig,
+    setupLogging,
+)
 
 
 def test_loadConfig_success():
     """Test loading config from YAML file."""
-    with patch('builtins.open') as mock_open, \
-         patch('pyInkPictureFrame.yaml.safe_load') as mock_yaml_load:
-        mock_yaml_load.return_value = {'key': 'value'}
+    with patch("builtins.open") as mock_open, patch(
+        "pyInkPictureFrame.yaml.safe_load"
+    ) as mock_yaml_load:
+        mock_yaml_load.return_value = {"key": "value"}
 
-        result = loadConfig('config.yaml')
+        result = loadConfig("config.yaml")
 
-        assert result == {'key': 'value'}
+        assert result == {"key": "value"}
 
 
 def test_loadConfig_file_not_found():
     """Test loading config when file is not found."""
-    with patch('builtins.open', side_effect=FileNotFoundError):
-        result = loadConfig('missing.yaml')
+    with patch("builtins.open", side_effect=FileNotFoundError):
+        result = loadConfig("missing.yaml")
 
         assert result == {}
 
 
 def test_parseArguments():
     """Test parsing command line arguments."""
-    with patch('pyInkPictureFrame.argparse.ArgumentParser') as mock_parser:
+    with patch("pyInkPictureFrame.argparse.ArgumentParser") as mock_parser:
         mock_args = MagicMock()
         mock_parser.return_value.parse_args.return_value = mock_args
 
@@ -63,22 +69,22 @@ def test_parseArguments():
 def test_mergeArgsAndConfig():
     """Test merging arguments and config."""
     args = MagicMock()
-    args.url = 'http://example.com'
+    args.url = "http://example.com"
     args.alarmMinutes = 60  # Use correct argument name
     args.epd = None
     args.noShutdown = None
 
-    config = {'url': 'default.com', 'alarmMinutes': 30}
+    config = {"url": "default.com", "alarmMinutes": 30}
 
     result = mergeArgsAndConfig(args, config)
 
-    assert result['url'] == 'http://example.com'  # Args take precedence
-    assert result['alarmMinutes'] == 60  # Correct key
+    assert result["url"] == "http://example.com"  # Args take precedence
+    assert result["alarmMinutes"] == 60  # Correct key
 
 
 def test_setupLogging():
     """Test setting up logging."""
-    with patch('pyInkPictureFrame.logging.basicConfig') as mock_basic_config:
-        setupLogging({'level': 'INFO'})
+    with patch("pyInkPictureFrame.logging.basicConfig") as mock_basic_config:
+        setupLogging({"level": "INFO"})
 
         mock_basic_config.assert_called_once()

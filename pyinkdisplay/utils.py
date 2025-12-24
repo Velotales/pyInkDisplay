@@ -34,6 +34,7 @@ import tenacity
 
 logger = logging.getLogger(__name__)
 
+
 def _createDefaultImage(width: int = 800, height: int = 480) -> Image.Image:
     """
     Creates a default fallback image for display when fetching fails.
@@ -47,7 +48,7 @@ def _createDefaultImage(width: int = 800, height: int = 480) -> Image.Image:
         PIL.Image.Image: A default image.
     """
     # Create a black image
-    image = Image.new('1', (width, height), 0)  # '1' for 1-bit black and white
+    image = Image.new("1", (width, height), 0)  # '1' for 1-bit black and white
     draw = ImageDraw.Draw(image)
     # Draw white text (since background is black)
     text = "Image Fetch Failed\nCheck Network"
@@ -55,11 +56,14 @@ def _createDefaultImage(width: int = 800, height: int = 480) -> Image.Image:
     draw.text((10, height // 2 - 20), text, fill=1)
     return image
 
+
 @tenacity.retry(
     stop=tenacity.stop_after_attempt(3),  # Retry up to 3 times
     wait=tenacity.wait_exponential(multiplier=1, min=1, max=10),  # Exponential backoff
-    retry=tenacity.retry_if_exception_type((requests.exceptions.RequestException, Exception)),
-    reraise=True  # Re-raise after retries
+    retry=tenacity.retry_if_exception_type(
+        (requests.exceptions.RequestException, Exception)
+    ),
+    reraise=True,  # Re-raise after retries
 )
 def fetchImageFromUrl(url: str) -> Optional[Image.Image]:
     """

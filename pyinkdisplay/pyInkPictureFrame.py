@@ -44,6 +44,7 @@ from .utils import fetchImageFromUrl
 displayManager = None
 alarmManager = None
 
+
 def signalHandler(sig, frame):
     """
     Signal handler for SIGINT (Ctrl+C) and SIGTERM to ensure clean GPIO shutdown.
@@ -56,6 +57,7 @@ def signalHandler(sig, frame):
     # PiSugar alarm manager doesn't require explicit GPIO cleanup in this setup, but add if needed
     logging.info("Exiting gracefully.")
     sys.exit(0)
+
 
 def loadConfig(configPath):
     """
@@ -75,17 +77,36 @@ def loadConfig(configPath):
         print(f"Failed to load config file {configPath}: {e}")
         return {}
 
+
 def parseArguments():
     """
     Sets up and parses command-line arguments for pyInkPictureFrame.
     """
-    argParser = argparse.ArgumentParser(description='EPD Image Display and PiSugar Alarm Setter')
-    argParser.add_argument('-e', '--epd', type=str, help="The type of EPD driver to use")
-    argParser.add_argument('-u', '--url', type=str, help="URL of the remote image to display on the EPD")
-    argParser.add_argument('-a', '--alarmMinutes', type=int, help="Number of minutes in the future to set the PiSugar alarm (default: 20)")
-    argParser.add_argument('--noShutdown', action='store_true', help="Do not shut down the computer after setting the alarm. For testing.")
-    argParser.add_argument('-c', '--config', type=str, help="Path to YAML config file with settings")
+    argParser = argparse.ArgumentParser(
+        description="EPD Image Display and PiSugar Alarm Setter"
+    )
+    argParser.add_argument(
+        "-e", "--epd", type=str, help="The type of EPD driver to use"
+    )
+    argParser.add_argument(
+        "-u", "--url", type=str, help="URL of the remote image to display on the EPD"
+    )
+    argParser.add_argument(
+        "-a",
+        "--alarmMinutes",
+        type=int,
+        help="Number of minutes in the future to set the PiSugar alarm (default: 20)",
+    )
+    argParser.add_argument(
+        "--noShutdown",
+        action="store_true",
+        help="Do not shut down the computer after setting the alarm. For testing.",
+    )
+    argParser.add_argument(
+        "-c", "--config", type=str, help="Path to YAML config file with settings"
+    )
     return argParser.parse_args()
+
 
 def mergeArgsAndConfig(args, config):
     """
@@ -105,7 +126,7 @@ def mergeArgsAndConfig(args, config):
         "url": "url",
         "alarmMinutes": "alarmMinutes",
         "noShutdown": "noShutdown",
-        "logging": "logging"
+        "logging": "logging",
     }
     for arg, configKey in argToConfig.items():
         argVal = getattr(args, arg, None)
@@ -113,12 +134,17 @@ def mergeArgsAndConfig(args, config):
         if arg == "noShutdown":
             merged[arg] = argVal if argVal is not None else bool(configVal)
         elif arg == "alarmMinutes":
-            merged[arg] = argVal if argVal is not None else (int(configVal) if configVal is not None else 20)
+            merged[arg] = (
+                argVal
+                if argVal is not None
+                else (int(configVal) if configVal is not None else 20)
+            )
         elif arg == "logging":
             merged[arg] = configVal  # Only from config
         else:
             merged[arg] = argVal if argVal is not None else configVal
     return merged
+
 
 def setupLogging(loggingConfig):
     """
@@ -127,9 +153,10 @@ def setupLogging(loggingConfig):
     """
     logging.basicConfig(
         level=logging.INFO,
-        format='%(asctime)s - %(levelname)s - %(module)s:%(funcName)s - %(message)s'
+        format="%(asctime)s - %(levelname)s - %(module)s:%(funcName)s - %(message)s",
     )
     logging.info("Console logging enabled.")
+
 
 def publishBatteryLevel(alarmManager, mqttConfig):
     """
@@ -145,17 +172,24 @@ def publishBatteryLevel(alarmManager, mqttConfig):
         return
     try:
         client = mqtt.Client()
-        if mqttConfig.get('username'):
-            client.username_pw_set(mqttConfig.get('username'), mqttConfig.get('password', ''))
-        client.connect(mqttConfig.get('host', 'localhost'), int(mqttConfig.get('port', 1883)), 60)
-        topic = mqttConfig.get('topic', 'homeassistant/sensor/pisugar_battery/state')
+        if mqttConfig.get("username"):
+            client.username_pw_set(
+                mqttConfig.get("username"), mqttConfig.get("password", "")
+            )
+        client.connect(
+            mqttConfig.get("host", "localhost"), int(mqttConfig.get("port", 1883)), 60
+        )
+        topic = mqttConfig.get("topic", "homeassistant/sensor/pisugar_battery/state")
         client.publish(topic, str(batteryLevel), retain=True)
         client.disconnect()
         logging.info(f"Published battery level {batteryLevel}% to MQTT topic {topic}")
     except Exception as e:
         logging.error(f"Failed to publish battery level to MQTT: {e}")
 
-def continuousEpdUpdateLoop(displayManager, alarmManager, imageUrl, alarmMinutes, mqttConfig=None):
+
+def continuousEpdUpdateLoop(
+    displayManager, alarmManager, imageUrl, alarmMinutes, mqttConfig=None
+):
     """
     Continuously update the e-ink display at the specified interval while power is present.
 
@@ -168,7 +202,11 @@ def continuousEpdUpdateLoop(displayManager, alarmManager, imageUrl, alarmMinutes
     secondsInFuture = alarmMinutes * 60
     keepRunningOnPower = True
     while keepRunningOnPower:
-        logging.info("Next EPD update scheduled in %d minutes (%d seconds).", alarmMinutes, secondsInFuture)
+        logging.info(
+            "Next EPD update scheduled in %d minutes (%d seconds).",
+            alarmMinutes,
+            secondsInFuture,
+        )
         remainingSleepTime = secondsInFuture
         checkInterval = 5
 
@@ -178,13 +216,18 @@ def continuousEpdUpdateLoop(displayManager, alarmManager, imageUrl, alarmMinutes
             remainingSleepTime -= sleepChunk
 
             if not alarmManager.isSugarPowered():
-                logging.info("PiSugar power detected as disconnected during sleep. Exiting continuous update loop.")
+                logging.info(
+                    "PiSugar power detected as disconnected during sleep. Exiting continuous update loop."
+                )
                 keepRunningOnPower = False
                 break
 
-
         secondsInFuture = alarmMinutes * 60
-        logging.info("Attempting to set PiSugar alarm for %d minutes (%d seconds) in the future.", alarmMinutes, secondsInFuture)
+        logging.info(
+            "Attempting to set PiSugar alarm for %d minutes (%d seconds) in the future.",
+            alarmMinutes,
+            secondsInFuture,
+        )
         alarmManager.setAlarm(secondsInFuture=secondsInFuture)
         logging.info("PiSugar alarm setting process completed.")
 
@@ -201,12 +244,17 @@ def continuousEpdUpdateLoop(displayManager, alarmManager, imageUrl, alarmMinutes
             displayManager.displayImage(updatedImage)
             logging.info("Updated image displayed on EPD.")
         else:
-            logging.warning("Failed to fetch updated image. Retrying after next interval.")
+            logging.warning(
+                "Failed to fetch updated image. Retrying after next interval."
+            )
 
         if not alarmManager.isSugarPowered():
-            logging.info("PiSugar power detected as disconnected. Exiting continuous update loop.")
+            logging.info(
+                "PiSugar power detected as disconnected. Exiting continuous update loop."
+            )
             keepRunningOnPower = False
             break
+
 
 def pyInkPictureFrame():
     """
@@ -221,7 +269,7 @@ def pyInkPictureFrame():
     args = parseArguments()
     config = loadConfig(args.config) if args.config else {}
     merged = mergeArgsAndConfig(args, config)
-    mqttConfig = config.get('mqtt') if config else None
+    mqttConfig = config.get("mqtt") if config else None
 
     setupLogging(merged.get("logging"))
 
@@ -243,13 +291,19 @@ def pyInkPictureFrame():
         image = fetchImageFromUrl(merged["url"])
 
         # Note: fetchImageFromUrl now returns a default image on failure, so this always succeeds
-        logging.info("Image fetched successfully (or fallback used). Displaying on EPD.")
+        logging.info(
+            "Image fetched successfully (or fallback used). Displaying on EPD."
+        )
         displayManager.displayImage(image)
         logging.info("Image displayed on EPD.")
 
         alarmManager = PiSugarAlarm()
         secondsInFuture = merged["alarmMinutes"] * 60
-        logging.info("Attempting to set PiSugar alarm for %d minutes (%d seconds) in the future.", merged["alarmMinutes"], secondsInFuture)
+        logging.info(
+            "Attempting to set PiSugar alarm for %d minutes (%d seconds) in the future.",
+            merged["alarmMinutes"],
+            secondsInFuture,
+        )
         alarmManager.setAlarm(secondsInFuture=secondsInFuture)
         logging.info("PiSugar alarm setting process completed.")
 
@@ -257,8 +311,16 @@ def pyInkPictureFrame():
         publishBatteryLevel(alarmManager, mqttConfig)
 
         if alarmManager.isSugarPowered():
-            logging.info("PiSugar is currently powered. Entering continuous EPD update mode.")
-            continuousEpdUpdateLoop(displayManager, alarmManager, merged["url"], merged["alarmMinutes"], mqttConfig)
+            logging.info(
+                "PiSugar is currently powered. Entering continuous EPD update mode."
+            )
+            continuousEpdUpdateLoop(
+                displayManager,
+                alarmManager,
+                merged["url"],
+                merged["alarmMinutes"],
+                mqttConfig,
+            )
         elif not merged["noShutdown"]:
             logging.info("All tasks completed. Shutting down the system...")
             try:
@@ -280,6 +342,7 @@ def pyInkPictureFrame():
         if displayManager:
             displayManager.closeDisplay()
             logging.info("EPD display closed.")
+
 
 __all__ = ["pyInkPictureFrame"]
 
