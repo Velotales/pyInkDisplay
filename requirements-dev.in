@@ -9,3 +9,4 @@ bandit
 mypy
 build
 twine
+pillow
