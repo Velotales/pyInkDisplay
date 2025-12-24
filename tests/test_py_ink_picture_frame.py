@@ -84,7 +84,9 @@ def test_mergeArgsAndConfig():
 
 def test_setupLogging():
     """Test setting up logging."""
-    with patch("pyinkdisplay.pyInkPictureFrame.logging.basicConfig") as mock_basic_config:
+    with patch(
+        "pyinkdisplay.pyInkPictureFrame.logging.basicConfig"
+    ) as mock_basic_config:
         setupLogging({"level": "INFO"})
 
         mock_basic_config.assert_called_once()
