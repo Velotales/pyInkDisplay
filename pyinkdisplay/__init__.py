@@ -23,7 +23,6 @@ SOFTWARE.
 
 """
 
-
 from .pyInkDisplay import PyInkDisplay, EPDNotFoundError
 from .pySugarAlarm import PiSugarAlarm, PiSugarConnectionError, PiSugarError
 from . import utils

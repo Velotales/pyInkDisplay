@@ -38,6 +38,7 @@ try:
     from pisugar import PiSugarServer, connect_tcp
 except ImportError:
     logger.error("PiSugar module not found. Please ensure 'pisugar' is installed.")
+    
     # Define dummy classes if PiSugar is not available, to allow the code structure to be seen
     # In a real scenario, you'd want to handle this more robustly, perhaps by exiting.
     class PiSugarServer:
