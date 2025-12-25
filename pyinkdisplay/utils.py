@@ -29,7 +29,7 @@ import logging
 from io import BytesIO
 from typing import Optional
 
-import requests
+import requests  # type: ignore[import-untyped]
 import tenacity
 from PIL import Image, ImageDraw
 

@@ -27,6 +27,7 @@ SOFTWARE.
 import logging
 import time
 from datetime import datetime, timedelta
+from typing import Any, Optional
 
 import pytz
 import requests
@@ -41,7 +42,7 @@ except ImportError:
 
     # Define dummy classes if PiSugar is not available, to allow the code structure to be seen
     # In a real scenario, you'd want to handle this more robustly, perhaps by exiting.
-    class PiSugarServer:
+    class PiSugarServer:  # type: ignore[no-redef]
         def __init__(self, *args, **kwargs):
             logger.warning("Dummy PiSugarServer initialized. PiSugar module not found.")
 
@@ -57,12 +58,9 @@ except ImportError:
         def rtc_alarm_set(self, *args, **kwargs):
             raise PiSugarConnectionError("PiSugar module not available.")
 
-    class connect_tcp:
-        def __init__(self, *args, **kwargs):
-            logger.warning("Dummy connect_tcp initialized. PiSugar module not found.")
-
-        def __call__(self):
-            return None, None
+    def connect_tcp(*args, **kwargs):  # type: ignore[no-redef]
+        logger.warning("Dummy connect_tcp initialized. PiSugar module not found.")
+        return None, None
 
 
 # Custom exceptions for PiSugar operations
@@ -93,10 +91,11 @@ class PiSugarAlarm:
             PiSugarConnectionError: If connection to PiSugar cannot be established.
             PiSugarError: If there's an error retrieving battery level from PiSugar.
         """
-        lastException = None
+        lastException: Optional[Exception] = None
         for attempt in range(1, retries + 1):
             try:
                 self._ensurePiSugarConnection()
+                assert self.pisugar is not None
                 level = self.pisugar.get_battery_level()
                 logger.info("PiSugar battery level: %s%%", level)
                 return level
@@ -126,12 +125,13 @@ class PiSugarAlarm:
                 )
                 time.sleep(delay)
         logger.error("get_battery_level failed after %s attempts.", retries)
+        assert lastException is not None
         raise lastException
 
     # Class-level constants for network check
     _defaultPingUrl = "http://clients3.google.com/generate_204"
 
-    def __init__(self, pingUrl: str = None):
+    def __init__(self, pingUrl: Optional[str] = None):
         """
         Initializes the PiSugarAlarm instance.
 
@@ -139,10 +139,10 @@ class PiSugarAlarm:
             pingUrl (str, optional): URL to ping for network connectivity.
                                      Defaults to _defaultPingUrl if None.
         """
-        self.pingUrl = pingUrl if pingUrl else self._defaultPingUrl
-        self.pisugar = None
-        self.connection = None
-        self.eventConnection = None
+        self.pingUrl: str = pingUrl if pingUrl else self._defaultPingUrl
+        self.pisugar: Optional[Any] = None
+        self.connection: Optional[Any] = None
+        self.eventConnection: Optional[Any] = None
 
         logger.info("Initializing PiSugarAlarm.")
 
@@ -173,8 +173,6 @@ class PiSugarAlarm:
         Args:
             baseDatetime (datetime): The starting datetime (e.g., current RTC time),
                                      preferably timezone-aware.
-            secondsInFuture (int): The number of seconds from the baseDatetime
-                                   to set the alarm.
         Returns:
             datetime: The calculated future datetime object, retaining timezone information.
         Raises:
@@ -212,6 +210,7 @@ class PiSugarAlarm:
         """
         logger.info("Syncing RTC clock to Pi...")
         try:
+            assert self.pisugar is not None
             self.pisugar.rtc_pi2rtc()
             logger.info("RTC clock sync initiated.")
         except Exception as e:
@@ -226,6 +225,7 @@ class PiSugarAlarm:
         # Do not exit here, attempt to proceed with potentially unsynced RTC time
 
         try:
+            assert self.pisugar is not None
             rtcDatetimeAfterSync = self.pisugar.get_rtc_time()
             logger.info(
                 "%s - RTC clock synced to Pi, previous time was %s",
@@ -272,10 +272,11 @@ class PiSugarAlarm:
             PiSugarConnectionError: If connection to PiSugar cannot be established.
             PiSugarError: If there's an error retrieving power status from PiSugar.
         """
-        lastException = None
+        lastException: Optional[Exception] = None
         for attempt in range(1, retries + 1):
             try:
                 self._ensurePiSugarConnection()
+                assert self.pisugar is not None
                 isPlugged = self.pisugar.get_battery_power_plugged()
                 logger.info("PiSugar power plugged status: %s", isPlugged)
                 return isPlugged
@@ -304,6 +305,7 @@ class PiSugarAlarm:
                 time.sleep(delay)
         # If we reach here, all attempts failed
         logger.error("isSugarPowered failed after %s attempts.", retries)
+        assert lastException is not None
         raise lastException
 
     def setAlarm(self, secondsInFuture: int):
@@ -336,6 +338,7 @@ class PiSugarAlarm:
 
         # Get initial RTC time
         try:
+            assert self.pisugar is not None
             initialRtcTime = self.pisugar.get_rtc_time()
             logger.info("Initial RTC time from PiSugar: %s", initialRtcTime)
         except Exception as e:
@@ -356,7 +359,11 @@ class PiSugarAlarm:
         # Determine timezone offset for logging
         try:
             localTz = datetime.now(pytz.utc).astimezone().tzinfo
-            timezoneOffsetSeconds = localTz.utcoffset(datetime.now()).total_seconds()
+            assert localTz is not None
+            offset = localTz.utcoffset(datetime.now())
+            if offset is None:
+                offset = timedelta(0)
+            timezoneOffsetSeconds = offset.total_seconds()
             hours = int(timezoneOffsetSeconds // 3600)
             minutes = int((timezoneOffsetSeconds % 3600) // 60)
             timezoneOffset = (

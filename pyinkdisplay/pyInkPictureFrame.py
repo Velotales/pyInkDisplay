@@ -32,7 +32,7 @@ import sys
 import time
 
 import paho.mqtt.client as mqtt
-import yaml
+import yaml  # type: ignore[import-untyped]
 
 from .mqttDiscovery import publishHaBatteryDiscovery
 from .pyInkDisplay import EPDNotFoundError, PyInkDisplay

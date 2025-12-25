@@ -25,6 +25,7 @@ SOFTWARE.
 """
 
 import logging
+from typing import Any, Optional
 
 from omni_epd import EPDNotFoundError, displayfactory
 from PIL import Image
@@ -41,7 +42,7 @@ class PyInkDisplay:
     and handling display operations.
     """
 
-    def __init__(self, epd_type: str = None):
+    def __init__(self, epd_type: Optional[str] = None):
         """
         Initializes the PyInkDisplay.
 
@@ -50,7 +51,7 @@ class PyInkDisplay:
                 If None, the display driver will need to be loaded
                 separately using loadDisplayDriver.
         """
-        self.epd = None
+        self.epd: Optional[Any] = None
         logger.info("Initializing PyInkDisplay.")
 
         if epd_type:
@@ -76,9 +77,11 @@ class PyInkDisplay:
         try:
             self.epd = displayfactory.load_display_driver(epd_type)
             logger.info("EPD driver '%s' loaded successfully.", epd_type)
-            logger.info("EPD mode: %s", self.epd.mode)
-            logger.info("EPD palette_filter: %s", self.epd.palette_filter)
-            logger.info("EPD max_colors: %s", self.epd.max_colors)
+            epd = self.epd
+            assert epd is not None
+            logger.info("EPD mode: %s", epd.mode)
+            logger.info("EPD palette_filter: %s", epd.palette_filter)
+            logger.info("EPD max_colors: %s", epd.max_colors)
         except EPDNotFoundError:
             logger.error("Couldn't find EPD driver: %s", epd_type)
             raise
@@ -102,19 +105,21 @@ class PyInkDisplay:
 
         try:
             logger.info("Image size: %s", image.size)
-            image = image.resize((self.epd.width, self.epd.height))
+            epd = self.epd
+            assert epd is not None
+            image = image.resize((epd.width, epd.height))
         except Exception as e:
             logger.error("Error resizing image: %s", e)
             return
 
         logger.info("Preparing display")
-        self.epd.prepare()
+        epd.prepare()
 
         logger.info("Clearing display")
-        self.epd.clear()
+        epd.clear()
         logger.info("Writing to display")
-        self.epd.display(image)
-        self.epd.sleep()
+        epd.display(image)
+        epd.sleep()
 
     def closeDisplay(self):
         """Closes the EPD display connection."""
