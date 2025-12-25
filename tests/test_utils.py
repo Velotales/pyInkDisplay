@@ -27,9 +27,6 @@ Unit tests for utils.py
 
 from unittest.mock import MagicMock, patch
 
-import pytest
-from PIL import Image
-
 import pyinkdisplay.utils as utils
 
 

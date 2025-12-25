@@ -78,5 +78,5 @@ def test_is_sugar_powered(mock_pisugar_server, mock_connect_tcp):
     mock_pisugar_instance.get_battery_power_plugged.return_value = True
 
     alarm = PiSugarAlarm()
-    assert alarm.isSugarPowered() == True
+    assert alarm.isSugarPowered() is True
     mock_pisugar_instance.get_battery_power_plugged.assert_called_once()

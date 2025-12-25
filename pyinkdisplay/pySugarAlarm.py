@@ -25,7 +25,6 @@ SOFTWARE.
 """
 
 import logging
-import sys
 import time
 from datetime import datetime, timedelta
 
@@ -137,7 +136,7 @@ class PiSugarAlarm:
         self.connection = None
         self.eventConnection = None
 
-        logger.info(f"Initializing PiSugarAlarm.")
+        logger.info("Initializing PiSugarAlarm.")
 
     @staticmethod
     def _isOnline(url: str) -> bool:
@@ -290,7 +289,7 @@ class PiSugarAlarm:
             secondsInFuture (int): The number of seconds from the current RTC time
                                    to set the alarm.
         """
-        logger.info(f"Starting alarm setup.")
+        logger.info("Starting alarm setup.")
 
         # 1. Check network connectivity
         logger.info("Checking network connectivity...")

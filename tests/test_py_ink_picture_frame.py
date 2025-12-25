@@ -27,8 +27,6 @@ Unit tests for pyInkPictureFrame.py
 
 from unittest.mock import MagicMock, patch
 
-import pytest
-
 from pyinkdisplay.pyInkPictureFrame import (
     loadConfig,
     mergeArgsAndConfig,
@@ -39,7 +37,7 @@ from pyinkdisplay.pyInkPictureFrame import (
 
 def test_loadConfig_success():
     """Test loading config from YAML file."""
-    with patch("builtins.open") as mock_open, patch(
+    with patch("builtins.open"), patch(
         "pyinkdisplay.pyInkPictureFrame.yaml.safe_load"
     ) as mock_yaml_load:
         mock_yaml_load.return_value = {"key": "value"}
