@@ -10,7 +10,7 @@ mypy==1.8.0
 build==1.0.3
 twine==4.0.2
 pillow==9.5.0
-click==8.1.7
+click==7.1.2
 coverage==7.2.7
 iniconfig==2.1.0
 platformdirs==3.10.0
