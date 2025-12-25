@@ -22,10 +22,11 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-import paho.mqtt.client as mqtt
 import json
-import time
 import os
+import time
+
+import paho.mqtt.client as mqtt
 
 # Read MQTT config from environment variables for safety
 MQTT_HOST = os.getenv("MQTT_HOST", "localhost")

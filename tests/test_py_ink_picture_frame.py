@@ -25,14 +25,12 @@ SOFTWARE.
 Unit tests for pyInkPictureFrame.py
 """
 
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import patch, MagicMock
-from pyinkdisplay.pyInkPictureFrame import (
-    loadConfig,
-    parseArguments,
-    mergeArgsAndConfig,
-    setupLogging,
-)
+
+from pyinkdisplay.pyInkPictureFrame import (loadConfig, mergeArgsAndConfig,
+                                            parseArguments, setupLogging)
 
 
 def test_loadConfig_success():

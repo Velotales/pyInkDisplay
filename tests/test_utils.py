@@ -25,10 +25,11 @@ SOFTWARE.
 Unit tests for utils.py
 """
 
-import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
+import pytest
 from PIL import Image
+
 import pyinkdisplay.utils as utils
 
 

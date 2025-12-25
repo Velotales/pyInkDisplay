@@ -25,8 +25,10 @@ SOFTWARE.
 Unit tests for pySugarAlarm.py
 """
 
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import patch, MagicMock
+
 from pyinkdisplay.pySugarAlarm import PiSugarAlarm
 
 

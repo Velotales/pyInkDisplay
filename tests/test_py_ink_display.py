@@ -25,10 +25,12 @@ SOFTWARE.
 Unit tests for pyInkDisplay.py
 """
 
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import patch, MagicMock
 from PIL import Image
-from pyinkdisplay.pyInkDisplay import PyInkDisplay, EPDNotFoundError
+
+from pyinkdisplay.pyInkDisplay import EPDNotFoundError, PyInkDisplay
 
 
 @patch("omni_epd.displayfactory.load_display_driver")
