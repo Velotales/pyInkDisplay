@@ -71,15 +71,15 @@ class PyInkDisplay:
         """
         try:
             self.epd = displayfactory.load_display_driver(epd_type)
-            logger.info(f"EPD driver '{epd_type}' loaded successfully.")
-            logger.info(f"EPD mode: {self.epd.mode}")
-            logger.info(f"EPD palette_filter: {self.epd.palette_filter}")
-            logger.info(f"EPD max_colors: {self.epd.max_colors}")
+            logger.info("EPD driver '%s' loaded successfully.", epd_type)
+            logger.info("EPD mode: %s", self.epd.mode)
+            logger.info("EPD palette_filter: %s", self.epd.palette_filter)
+            logger.info("EPD max_colors: %s", self.epd.max_colors)
         except EPDNotFoundError:
-            logger.error(f"Couldn't find EPD driver: {epd_type}")
+            logger.error("Couldn't find EPD driver: %s", epd_type)
             raise
         except Exception as e:
-            logger.error(f"Error loading EPD driver: {e}")
+            logger.error("Error loading EPD driver: %s", e)
             raise
 
     def displayImage(self, image: Image.Image):
@@ -97,10 +97,10 @@ class PyInkDisplay:
             raise RuntimeError("EPD driver not loaded.")
 
         try:
-            logger.info(f"Image size: {image.size}")
+            logger.info("Image size: %s", image.size)
             image = image.resize((self.epd.width, self.epd.height))
         except Exception as e:
-            logger.error(f"Error resizing image: {e}")
+            logger.error("Error resizing image: %s", e)
             return
 
         logger.info("Preparing display")

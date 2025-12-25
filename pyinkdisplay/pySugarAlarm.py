@@ -98,7 +98,7 @@ class PiSugarAlarm:
             try:
                 self._ensurePiSugarConnection()
                 level = self.pisugar.get_battery_level()
-                logger.info(f"PiSugar battery level: {level}%")
+                logger.info("PiSugar battery level: %s%%", level)
                 return level
             except PiSugarConnectionError:
                 logger.error(
@@ -107,17 +107,22 @@ class PiSugarAlarm:
                 lastException = PiSugarConnectionError("Not connected to PiSugar.")
             except Exception as e:
                 logger.warning(
-                    f"Attempt {attempt} failed to get battery level from PiSugar: {e}"
+                    "Attempt %s failed to get battery level from PiSugar: %s",
+                    attempt,
+                    e,
                 )
                 lastException = PiSugarError(
                     f"Error getting battery level from PiSugar: {e}"
                 )
             if attempt < retries:
                 logger.info(
-                    f"Retrying get_battery_level in {delay} seconds (attempt {attempt+1}/{retries})..."
+                    "Retrying get_battery_level in %s seconds (attempt %s/%s)...",
+                    delay,
+                    attempt + 1,
+                    retries,
                 )
                 time.sleep(delay)
-        logger.error(f"get_battery_level failed after {retries} attempts.")
+        logger.error("get_battery_level failed after %s attempts.", retries)
         raise lastException
 
     # Class-level constants for network check
@@ -151,7 +156,7 @@ class PiSugarAlarm:
             response = requests.get(url, timeout=5)
             return response.status_code == 204
         except requests.exceptions.RequestException as e:
-            logger.error(f"Network check failed for {url}: {e}")
+            logger.error("Network check failed for %s: %s", url, e)
             return False
 
     @staticmethod
@@ -237,7 +242,7 @@ class PiSugarAlarm:
             try:
                 self._connectToPiSugar()
             except PiSugarConnectionError as e:
-                logger.error(f"Failed to establish PiSugar connection: {e}")
+                logger.error("Failed to establish PiSugar connection: %s", e)
                 raise
 
     def isSugarPowered(self, retries=3, delay=2) -> bool:
@@ -258,7 +263,7 @@ class PiSugarAlarm:
             try:
                 self._ensurePiSugarConnection()
                 isPlugged = self.pisugar.get_battery_power_plugged()
-                logger.info(f"PiSugar power plugged status: {isPlugged}")
+                logger.info("PiSugar power plugged status: %s", isPlugged)
                 return isPlugged
             except PiSugarConnectionError:
                 logger.error(
@@ -267,18 +272,23 @@ class PiSugarAlarm:
                 lastException = PiSugarConnectionError("Not connected to PiSugar.")
             except Exception as e:
                 logger.warning(
-                    f"Attempt {attempt} failed to get battery power plugged status from PiSugar: {e}"
+                    "Attempt %s failed to get battery power plugged status from PiSugar: %s",
+                    attempt,
+                    e,
                 )
                 lastException = PiSugarError(
                     f"Error getting battery power plugged status from PiSugar: {e}"
                 )
             if attempt < retries:
                 logger.info(
-                    f"Retrying isSugarPowered in {delay} seconds (attempt {attempt+1}/{retries})..."
+                    "Retrying isSugarPowered in %s seconds (attempt %s/%s)...",
+                    delay,
+                    attempt + 1,
+                    retries,
                 )
                 time.sleep(delay)
         # If we reach here, all attempts failed
-        logger.error(f"isSugarPowered failed after {retries} attempts.")
+        logger.error("isSugarPowered failed after %s attempts.", retries)
         raise lastException
 
     def setAlarm(self, secondsInFuture: int):
@@ -305,13 +315,13 @@ class PiSugarAlarm:
         try:
             self._ensurePiSugarConnection()
         except PiSugarConnectionError as e:
-            logger.error(f"Connection error during alarm setup: {e}")
+                logger.error("Connection error during alarm setup: %s", e)
             raise PiSugarError(f"Failed to connect to PiSugar: {e}")
 
         # Get initial RTC time
         try:
             initialRtcTime = self.pisugar.get_rtc_time()
-            logger.info(f"Initial RTC time from PiSugar: {initialRtcTime}")
+            logger.info("Initial RTC time from PiSugar: %s", initialRtcTime)
         except Exception as e:
             logger.error(f"Failed to get initial RTC time from PiSugar: {e}")
             logger.error(

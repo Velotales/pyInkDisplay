@@ -64,7 +64,7 @@ def test_load_display_driver_general_error(mock_load):
 
     display = PyInkDisplay()
 
-    with pytest.raises(Exception):
+    with pytest.raises(Exception, match="General error"):
         display.loadDisplayDriver("test_driver")
 
 

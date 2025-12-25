@@ -84,10 +84,10 @@ def fetchImageFromUrl(url: str) -> Optional[Image.Image]:
         logger.info("PIL Image object created from URL.")
         return image
     except requests.exceptions.RequestException as e:
-        logger.error(f"Error fetching image from {url}: {e}")
+        logger.error("Error fetching image from %s: %s", url, e)
         logger.info("Returning default fallback image due to fetch failure.")
         return _createDefaultImage()
     except Exception as e:
-        logger.error(f"An unexpected error occurred: {e}")
+        logger.error("An unexpected error occurred: %s", e)
         logger.info("Returning default fallback image due to unexpected error.")
         return _createDefaultImage()

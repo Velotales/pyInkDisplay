@@ -46,10 +46,10 @@ alarmManager = None
 
 def signalHandler(sig, frame):
     """
-    Signal handler for SIGINT (Ctrl+C) and SIGTERM to ensure clean GPIO shutdown.
-    Cleans up display and alarm managers before exiting.
+    Signal handler for SIGINT (Ctrl+C) and SIGTERM.
+    Ensures clean GPIO shutdown and cleans up managers.
     """
-    logging.info(f"Signal {sig} received. Performing cleanup...")
+    logging.info("Signal %s received. Performing cleanup...", sig)
     if displayManager:
         displayManager.closeDisplay()
         logging.info("Display cleaned up.")
@@ -73,7 +73,7 @@ def loadConfig(configPath):
             config = yaml.safe_load(f)
             return config if config else {}
     except Exception as e:
-        print(f"Failed to load config file {configPath}: {e}")
+        print(f"Failed to load config file {configPath}: {e}")  # noqa: B950
         return {}
 
 
@@ -164,7 +164,7 @@ def publishBatteryLevel(alarmManager, mqttConfig):
     try:
         batteryLevel = alarmManager.get_battery_level()
     except Exception as e:
-        logging.error(f"Failed to get battery level for MQTT publish: {e}")
+        logging.error("Failed to get battery level for MQTT publish: %s", e)
         return
     if not mqttConfig:
         logging.warning("No MQTT config provided, skipping battery publish.")
@@ -181,9 +181,13 @@ def publishBatteryLevel(alarmManager, mqttConfig):
         topic = mqttConfig.get("topic", "homeassistant/sensor/pisugar_battery/state")
         client.publish(topic, str(batteryLevel), retain=True)
         client.disconnect()
-        logging.info(f"Published battery level {batteryLevel}% to MQTT topic {topic}")
+        logging.info(
+            "Published battery level %s%% to MQTT topic %s",
+            batteryLevel,
+            topic,
+        )
     except Exception as e:
-        logging.error(f"Failed to publish battery level to MQTT: {e}")
+        logging.error("Failed to publish battery level to MQTT: %s", e)
 
 
 def continuousEpdUpdateLoop(
