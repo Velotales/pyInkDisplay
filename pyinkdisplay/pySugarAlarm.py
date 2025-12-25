@@ -194,8 +194,11 @@ class PiSugarAlarm:
             logger.info("Successfully connected to PiSugar server.")
         except Exception as e:
             raise PiSugarConnectionError(
-                f"Failed to connect to PiSugar: {e}. "
-                "Please ensure pisugar-server is running and you have permissions (try with 'sudo')."
+                (
+                    f"Failed to connect to PiSugar: {e}. "
+                    "Please ensure pisugar-server is running and you have "
+                    "permissions (try with 'sudo')."
+                )
             )
 
     def _syncRtc(self, initialRtcTime: datetime):
@@ -210,16 +213,21 @@ class PiSugarAlarm:
             logger.info("RTC clock sync initiated.")
         except Exception as e:
             logger.warning(
-                f"Warning: RTC clock sync might have failed: {e}. "
-                "Please ensure pisugar-server is running and you have permissions (try with 'sudo')."
+                (
+                    "Warning: RTC clock sync might have failed: %s. "
+                    "Please ensure pisugar-server is running and you have "
+                    "permissions (try with 'sudo')."
+                ),
+                e,
             )
-            # Do not exit here, attempt to proceed with potentially unsynced RTC time
+        # Do not exit here, attempt to proceed with potentially unsynced RTC time
 
         try:
             rtcDatetimeAfterSync = self.pisugar.get_rtc_time()
             logger.info(
-                f"{rtcDatetimeAfterSync} - RTC clock synced to Pi, "
-                f"previous time was {initialRtcTime}"
+                "%s - RTC clock synced to Pi, previous time was %s",
+                rtcDatetimeAfterSync,
+                initialRtcTime,
             )
         except Exception as e:
             raise PiSugarError(
@@ -267,12 +275,13 @@ class PiSugarAlarm:
                 return isPlugged
             except PiSugarConnectionError:
                 logger.error(
-                    "Cannot check power status: Not connected to PiSugar. Please ensure pisugar-server is running."
+                    "Cannot check power status: Not connected to PiSugar. "
+                    "Please ensure pisugar-server is running."
                 )
                 lastException = PiSugarConnectionError("Not connected to PiSugar.")
             except Exception as e:
                 logger.warning(
-                    "Attempt %s failed to get battery power plugged status from PiSugar: %s",
+                    "Attempt %s failed to get power status from PiSugar: %s",
                     attempt,
                     e,
                 )
@@ -306,10 +315,11 @@ class PiSugarAlarm:
         while not self._isOnline(self.pingUrl):
             current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             logger.error(
-                f"{current_time} - Failed test to {self.pingUrl}, waiting for connectivity"
+                "%s - Failed test to %s, waiting for connectivity",
+                current_time,
+                self.pingUrl,
             )
             time.sleep(5)
-        logger.info("Connected.")
 
         # Ensure connection to PiSugar
         try:
@@ -325,15 +335,16 @@ class PiSugarAlarm:
         except Exception as e:
             logger.error(f"Failed to get initial RTC time from PiSugar: {e}")
             logger.error(
-                "Please ensure pisugar-server is running and you have permissions (try with 'sudo'). Exiting."
+                "Please ensure pisugar-server is running and you have permissions."
             )
+            logger.error("Try running with 'sudo'. Exiting.")
             raise PiSugarError(f"Failed to set RTC time: {e}")
 
         # Sync RTC and get updated time
         try:
             rtcDatetime = self._syncRtc(initialRtcTime)
         except PiSugarError as e:
-            logger.error(f"RTC sync error: {e}")
+            logger.error("RTC sync error: %s", e)
             raise PiSugarError(f"Failed to sync RTC time: {e}")
 
         # Determine timezone offset for logging
@@ -373,16 +384,19 @@ class PiSugarAlarm:
             try:
                 # 127 means repeat every day
                 self.pisugar.rtc_alarm_set(nextAlarmDatetime, 127)
-                logger.info(
-                    f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} - Alarm set for [{nextAlarmFormatted}]"
-                )
+                nowStr = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                logger.info("%s - Alarm set for [%s]", nowStr, nextAlarmFormatted)
             except Exception as e:  # Catching a general exception for alarm setting
+                nowStr = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 logger.error(
-                    f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} - Error while setting alarm using PiSugar module: {e}"
+                    "%s - Error while setting alarm using PiSugar module: %s",
+                    nowStr,
+                    e,
                 )
                 logger.error(
-                    "Please ensure pisugar-server is running and you have permissions (try with 'sudo')."
+                    "Please ensure pisugar-server is running and you have permissions."
                 )
+                logger.error("Try running with 'sudo'.")
                 raise PiSugarError(f"Failed to set next alarm: {e}")
         else:
             logger.error("Error: Could not determine next alarm time. Exiting.")

@@ -34,8 +34,11 @@ logger = logging.getLogger(__name__)
 
 class PyInkDisplay:
     """
-    A class to manage and display images on E-Paper displays (EPD) using omni_epd.
-    It supports fetching images from local files or remote URLs and handling display operations.
+    Manage and display images on E-Paper displays (EPD)
+    using omni_epd.
+
+    Supports fetching images from local files or remote URLs
+    and handling display operations.
     """
 
     def __init__(self, epd_type: str = None):
@@ -43,8 +46,9 @@ class PyInkDisplay:
         Initializes the PyInkDisplay.
 
         Args:
-            epd_type (str, optional): The type of EPD driver to load. If None, the display
-                                      driver will need to be loaded separately using loadDisplayDriver.
+            epd_type (str, optional): The type of EPD driver to load.
+                If None, the display driver will need to be loaded
+                separately using loadDisplayDriver.
         """
         self.epd = None
         logger.info("Initializing PyInkDisplay.")
@@ -119,6 +123,6 @@ class PyInkDisplay:
                 self.epd.close()
                 logger.info("EPD display closed.")
             except Exception as e:
-                logger.error(f"Error closing EPD: {e}")
+                logger.error("Error closing EPD: %s", e)
             finally:
                 self.epd = None

@@ -89,5 +89,5 @@ def fetchImageFromUrl(url: str) -> Optional[Image.Image]:
         return _createDefaultImage()
     except Exception as e:
         logger.error("An unexpected error occurred: %s", e)
-        logger.info("Returning default fallback image due to unexpected error.")
+        logger.info("Returning default fallback image due to an unexpected error.")
         return _createDefaultImage()

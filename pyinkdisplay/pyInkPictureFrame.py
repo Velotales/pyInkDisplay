@@ -53,7 +53,7 @@ def signalHandler(sig, frame):
     if displayManager:
         displayManager.closeDisplay()
         logging.info("Display cleaned up.")
-    # PiSugar alarm manager doesn't require explicit GPIO cleanup in this setup, but add if needed
+    # PiSugar alarm manager doesn't require explicit GPIO cleanup; add if needed
     logging.info("Exiting gracefully.")
     sys.exit(0)
 
@@ -220,14 +220,20 @@ def continuousEpdUpdateLoop(
 
             if not alarmManager.isSugarPowered():
                 logging.info(
-                    "PiSugar power detected as disconnected during sleep. Exiting continuous update loop."
+                    (
+                        "PiSugar power detected as disconnected during sleep. "
+                        "Exiting continuous update loop."
+                    )
                 )
                 keepRunningOnPower = False
                 break
 
         secondsInFuture = alarmMinutes * 60
         logging.info(
-            "Attempting to set PiSugar alarm for %d minutes (%d seconds) in the future.",
+            (
+                "Attempting to set PiSugar alarm for %d minutes "
+                "(%d seconds) in the future."
+            ),
             alarmMinutes,
             secondsInFuture,
         )
@@ -253,7 +259,10 @@ def continuousEpdUpdateLoop(
 
         if not alarmManager.isSugarPowered():
             logging.info(
-                "PiSugar power detected as disconnected. Exiting continuous update loop."
+                (
+                    "PiSugar power detected as disconnected. "
+                    "Exiting continuous update loop."
+                )
             )
             keepRunningOnPower = False
             break
@@ -303,7 +312,10 @@ def pyInkPictureFrame():
         alarmManager = PiSugarAlarm()
         secondsInFuture = merged["alarmMinutes"] * 60
         logging.info(
-            "Attempting to set PiSugar alarm for %d minutes (%d seconds) in the future.",
+            (
+                "Attempting to set PiSugar alarm for %d minutes "
+                "(%d seconds) in the future."
+            ),
             merged["alarmMinutes"],
             secondsInFuture,
         )

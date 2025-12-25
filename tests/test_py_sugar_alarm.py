@@ -54,8 +54,9 @@ def test_set_alarm(mock_pisugar_server, mock_connect_tcp):
         mock_pisugar_instance.rtc_pi2rtc = MagicMock()
 
         alarm = PiSugarAlarm()
-        # Mock the setAlarm to avoid actual execution, but since it's complex, perhaps just call and check no exception
-        # For simplicity, since the method is complex, test that it doesn't raise if mocks are set
+        # Mock the setAlarm to avoid actual execution.
+        # Since it's complex, just call and check no exception.
+        # For simplicity, test that it doesn't raise if mocks are set.
         try:
             alarm.setAlarm(secondsInFuture=60)
             # If no exception, pass
