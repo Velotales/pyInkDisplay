@@ -29,8 +29,8 @@ import time
 from datetime import datetime, timedelta
 from typing import Any, Optional
 
-import pytz
-import requests
+import pytz  # type: ignore[import-untyped]
+import requests  # type: ignore[import-untyped]
 
 logger = logging.getLogger(__name__)
 
