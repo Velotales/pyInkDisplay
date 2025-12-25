@@ -102,7 +102,10 @@ class PiSugarAlarm:
                 return level
             except PiSugarConnectionError:
                 logger.error(
-                    "Cannot check battery level: Not connected to PiSugar. Please ensure pisugar-server is running."
+                    (
+                        "Cannot check battery level: Not connected to PiSugar. "
+                        "Please ensure pisugar-server is running."
+                    )
                 )
                 lastException = PiSugarConnectionError("Not connected to PiSugar.")
             except Exception as e:
@@ -231,8 +234,11 @@ class PiSugarAlarm:
             )
         except Exception as e:
             raise PiSugarError(
-                f"Error getting RTC time after sync from PiSugar: {e}. "
-                "Please ensure pisugar-server is running and you have permissions (try with 'sudo')."
+                (
+                    f"Error getting RTC time after sync from PiSugar: {e}. "
+                    "Please ensure pisugar-server is running and you have permissions "
+                    "(try with 'sudo')."
+                )
             )
         return rtcDatetimeAfterSync
 
@@ -358,7 +364,8 @@ class PiSugarAlarm:
             )
         except Exception as e:
             logger.error(
-                f"Could not determine timezone offset: {e}. Defaulting to +00:00."
+                "Could not determine timezone offset: %s. Defaulting to +00:00.",
+                e,
             )
             timezoneOffset = "+00:00"
 
@@ -369,7 +376,9 @@ class PiSugarAlarm:
                 rtcDatetime, secondsInFuture
             )
             logger.info(
-                f"Calculated next alarm (in {secondsInFuture} seconds): {nextAlarmDatetime.isoformat()}"
+                "Calculated next alarm (in %s seconds): %s",
+                secondsInFuture,
+                nextAlarmDatetime.isoformat(),
             )
         except ValueError as e:
             logger.error(f"Error calculating future alarm time: {e}. Exiting.")

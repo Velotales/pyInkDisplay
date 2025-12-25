@@ -75,7 +75,8 @@ def fetchImageFromUrl(url: str) -> Optional[Image.Image]:
         url (str): The URL to fetch the image from.
 
     Returns:
-        PIL.Image.Image: The downloaded image as a PIL Image object, or a default fallback image on error.
+        PIL.Image.Image: The downloaded image as a PIL Image object,
+        or a default fallback image on error.
     """
     try:
         response = requests.get(url, timeout=10)

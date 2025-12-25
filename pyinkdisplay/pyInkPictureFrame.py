@@ -302,7 +302,8 @@ def pyInkPictureFrame():
         logging.info("Attempting to fetch image from URL: %s", merged["url"])
         image = fetchImageFromUrl(merged["url"])
 
-        # Note: fetchImageFromUrl now returns a default image on failure, so this always succeeds
+        # Note: fetchImageFromUrl now returns a default image on failure.
+        # Therefore, this call always succeeds.
         logging.info(
             "Image fetched successfully (or fallback used). Displaying on EPD."
         )
