@@ -29,8 +29,12 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from pyinkdisplay.pyInkPictureFrame import (loadConfig, mergeArgsAndConfig,
-                                            parseArguments, setupLogging)
+from pyinkdisplay.pyInkPictureFrame import (
+    loadConfig,
+    mergeArgsAndConfig,
+    parseArguments,
+    setupLogging,
+)
 
 
 def test_loadConfig_success():
