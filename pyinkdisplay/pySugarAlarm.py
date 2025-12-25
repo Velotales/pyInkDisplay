@@ -315,7 +315,7 @@ class PiSugarAlarm:
         try:
             self._ensurePiSugarConnection()
         except PiSugarConnectionError as e:
-                logger.error("Connection error during alarm setup: %s", e)
+            logger.error("Connection error during alarm setup: %s", e)
             raise PiSugarError(f"Failed to connect to PiSugar: {e}")
 
         # Get initial RTC time
