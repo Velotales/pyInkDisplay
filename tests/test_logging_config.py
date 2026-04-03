@@ -48,3 +48,33 @@ def test_setup_logging_loki_falls_back_to_console():
         setup_logging({"backend": "loki"})
     mock_config.assert_called_once()
     mock_warning.assert_called_once()
+
+
+def test_setup_logging_seq_calls_seqlog(monkeypatch):
+    """Seq backend calls seqlog.log_to_seq with the configured URL."""
+    mock_seqlog = MagicMock()
+    monkeypatch.setitem(__import__("sys").modules, "seqlog", mock_seqlog)
+
+    setup_logging({
+        "backend": "seq",
+        "level": "DEBUG",
+        "seq": {"url": "http://seq.local:5341"},
+    })
+
+    mock_seqlog.log_to_seq.assert_called_once_with(
+        server_url="http://seq.local:5341",
+        level=logging.DEBUG,
+        override_root_logger=True,
+    )
+
+
+def test_setup_logging_seq_falls_back_when_seqlog_missing():
+    """Falls back to console logging when seqlog is not installed."""
+    with patch("pyinkdisplay.logging_config.logging.basicConfig") as mock_config, \
+         patch("builtins.__import__", side_effect=lambda name, *a, **kw: (
+             (_ for _ in ()).throw(ImportError())
+             if name == "seqlog"
+             else __import__(name, *a, **kw)
+         )):
+        setup_logging({"backend": "seq", "seq": {"url": "http://seq.local:5341"}})
+    mock_config.assert_called_once()
