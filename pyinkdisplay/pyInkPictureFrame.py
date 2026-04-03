@@ -38,6 +38,7 @@ from .mqttDiscovery import publishHaBatteryDiscovery
 from .pyInkDisplay import EPDNotFoundError, PyInkDisplay
 from .pySugarAlarm import PiSugarAlarm
 from .updater import apply_update, check_and_apply_update, get_latest_tag, restart_service
+from .logging_config import setup_logging
 from .utils import fetchImageFromUrl
 
 # Global variables for signal handler access
@@ -318,7 +319,8 @@ def pyInkPictureFrame():
     updaterEnabled = updaterConfig.get("enabled", True)
     forceRevert = updaterConfig.get("force_revert", False)
 
-    setupLogging(merged.get("logging"))
+    loggingConfig = config.get("logging", {}) if config else {}
+    setup_logging(loggingConfig)
 
     # Publish Home Assistant MQTT discovery if MQTT is configured
     if mqttConfig:
