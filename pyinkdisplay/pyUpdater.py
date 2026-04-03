@@ -34,7 +34,7 @@ from typing import Optional
 
 logger = logging.getLogger(__name__)
 
-DEV_MODE_MARKER = Path("/tmp/pyinkdisplay_dev_mode")
+DEV_MODE_MARKER = Path("/tmp/pyinkdisplay_dev_mode")  # nosec B108
 
 
 def getCurrentTag() -> Optional[str]:
