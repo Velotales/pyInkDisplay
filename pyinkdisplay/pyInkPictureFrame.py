@@ -159,18 +159,6 @@ def mergeArgsAndConfig(args, config):
     return merged
 
 
-def setupLogging(loggingConfig):
-    """
-    Configures logging for the application.
-    Supports console logging only.
-    """
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s - %(levelname)s - %(module)s:%(funcName)s - %(message)s",
-    )
-    logging.info("Console logging enabled.")
-
-
 def publishBatteryLevel(alarmManager, mqttConfig):
     """
     Publishes the PiSugar battery level to the configured MQTT broker.
@@ -184,7 +172,7 @@ def publishBatteryLevel(alarmManager, mqttConfig):
         logging.warning("No MQTT config provided, skipping battery publish.")
         return
     try:
-        client = mqtt.Client()
+        client = mqtt.Client(protocol=mqtt.MQTTv5)
         if mqttConfig.get("username"):
             client.username_pw_set(
                 mqttConfig.get("username"), mqttConfig.get("password", "")
@@ -359,8 +347,10 @@ def pyInkPictureFrame():
                 "pyInkDisplay: Image Fetch Failed",
                 f"Failed to fetch image from {merged['url']}",
             )
+            logging.error("No image available — aborting cycle.")
+            sys.exit(1)
         logging.info(
-            "Image fetched successfully (or fallback used). Displaying on EPD."
+            "Image fetched successfully. Displaying on EPD."
         )
         displayManager.displayImage(image)
         logging.info("Image displayed on EPD.")
@@ -381,6 +371,8 @@ def pyInkPictureFrame():
             "image_fetch_status": imageFetchStatus,
             "power_mode": powerMode,
             "software_version": get_current_tag() or "unknown",
+            # update_available: computed after check_and_apply_update below;
+            # always False here (USB path updates telemetry before the check)
             "update_available": False,
         }
 

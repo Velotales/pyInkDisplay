@@ -62,14 +62,20 @@ def publishHaBatteryDiscovery(mqtt_config):
         client.publish(DISCOVERY_TOPIC, json.dumps(payload), retain=True)
         client.loop_stop()
         client.disconnect()
-        print(f"Published Home Assistant discovery message to {DISCOVERY_TOPIC}")
+        logger.info("Published Home Assistant discovery message to %s", DISCOVERY_TOPIC)
     except Exception as e:
-        print(f"Failed to publish discovery message: {e}")
+        logger.error("Failed to publish discovery message: %s", e)
 
 
 STATE_TOPIC = "homeassistant/sensor/pyinkdisplay/state"
 
 _TELEMETRY_SENSORS = [
+    {
+        "field": "battery_level",
+        "name": "pyInkDisplay Battery Level",
+        "device_class": "battery",
+        "unique_id": "pyinkdisplay_battery_level",
+    },
     {
         "field": "last_update_time",
         "name": "pyInkDisplay Last Update",

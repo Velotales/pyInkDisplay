@@ -33,7 +33,6 @@ from pyinkdisplay.pyInkPictureFrame import (
     parseArguments,
     pyInkPictureFrame,
     runBatteryMode,
-    setupLogging,
 )
 
 
@@ -82,16 +81,6 @@ def test_mergeArgsAndConfig():
 
     assert result["url"] == "http://example.com"  # Args take precedence
     assert result["alarmMinutes"] == 60  # Correct key
-
-
-def test_setupLogging():
-    """Test setting up logging."""
-    with patch(
-        "pyinkdisplay.pyInkPictureFrame.logging.basicConfig"
-    ) as mock_basic_config:
-        setupLogging({"level": "INFO"})
-
-        mock_basic_config.assert_called_once()
 
 
 def test_runBatteryMode_sets_alarm_and_shuts_down():
@@ -278,7 +267,9 @@ def test_pyInkPictureFrame_reverts_when_force_revert_set():
 
 
 def test_pyInkPictureFrame_notifies_on_image_fetch_failure():
-    """Sends an Apprise notification when image fetch returns None."""
+    """Sends an Apprise notification when image fetch returns None, then exits."""
+    import pytest
+
     with patch("pyinkdisplay.pyInkPictureFrame.parseArguments") as mock_args, \
          patch("pyinkdisplay.pyInkPictureFrame.loadConfig", return_value={"apprise": {"url": "http://apprise.local"}}), \
          patch("pyinkdisplay.pyInkPictureFrame.mergeArgsAndConfig", return_value={
@@ -297,7 +288,10 @@ def test_pyInkPictureFrame_notifies_on_image_fetch_failure():
         mock_alarm.isSugarPowered.return_value = False
         mock_alarm_cls.return_value = mock_alarm
 
-        pyInkPictureFrame()
+        with pytest.raises(SystemExit) as exc_info:
+            pyInkPictureFrame()
+
+        assert exc_info.value.code == 1
 
     mock_notify.assert_any_call(
         {"url": "http://apprise.local"},
