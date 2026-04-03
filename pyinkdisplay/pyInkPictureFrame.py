@@ -340,25 +340,12 @@ def pyInkPictureFrame():
         logging.info("Image displayed on EPD.")
 
         alarmManager = PiSugarAlarm()
-        secondsInFuture = merged["alarmMinutes"] * 60
-        logging.info(
-            (
-                "Attempting to set PiSugar alarm for %d minutes "
-                "(%d seconds) in the future."
-            ),
-            merged["alarmMinutes"],
-            secondsInFuture,
-        )
-        alarmManager.setAlarm(secondsInFuture=secondsInFuture)
-        logging.info("PiSugar alarm setting process completed.")
-
-        # Publish battery level to MQTT at startup
-        publishBatteryLevel(alarmManager, mqttConfig)
 
         if alarmManager.isSugarPowered():
             logging.info(
-                "PiSugar is currently powered. Entering continuous EPD update mode."
+                "PiSugar is powered. Publishing battery level and entering continuous update mode."
             )
+            publishBatteryLevel(alarmManager, mqttConfig)
             continuousEpdUpdateLoop(
                 displayManager,
                 alarmManager,
@@ -366,16 +353,14 @@ def pyInkPictureFrame():
                 merged["alarmMinutes"],
                 mqttConfig,
             )
-        elif not merged["noShutdown"]:
-            logging.info("All tasks completed. Shutting down the system...")
-            try:
-                if not alarmManager.isSugarPowered():
-                    subprocess.run(["sudo", "shutdown", "+1"], check=True)
-                    logging.info("Shutdown command issued successfully.")
-            except Exception as e:
-                logging.error("Error during shutdown: %s", e)
         else:
-            logging.info("Skipping shutdown due to --noShutdown flag.")
+            logging.info("PiSugar is on battery. Running one-shot battery mode.")
+            runBatteryMode(
+                alarmManager,
+                merged["alarmMinutes"],
+                mqttConfig,
+                merged["noShutdown"],
+            )
 
     except (EPDNotFoundError, RuntimeError) as e:
         logging.error("EPD display error: %s", e)
