@@ -1,0 +1,16 @@
+[Unit]
+Description=pyInkDisplay - E-Paper Display Service for Home Assistant Dashboard
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=your_user
+Group=your_user
+WorkingDirectory=/home/your_user/pyInkDisplay
+Environment=PATH=/home/your_user/pyInkDisplay/.venv/bin:/usr/local/bin:/usr/bin:/bin
+ExecStart=/home/your_user/pyInkDisplay/.venv/bin/python -m pyinkdisplay.pyInkPictureFrame -e waveshare_epd.epd7in3f -u http://your-home-assistant/dashboard.png -a 120
+Restart=on-failure
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
