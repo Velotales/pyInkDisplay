@@ -16,7 +16,7 @@ fi
 
 REMOTE_DIR="${2:-/home/pi/pyInkDisplay}"
 MARKER_PATH="/tmp/pyinkdisplay_dev_mode"
-SERVICE_NAME="pyInkDisplay.service"
+SERVICE_NAME="pyInkPictureFrame.service"
 
 echo "Reverting $TARGET to latest release tag ..."
 

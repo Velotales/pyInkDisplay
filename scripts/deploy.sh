@@ -23,7 +23,7 @@ fi
 REMOTE_DIR="${2:-/home/pi/pyInkDisplay}"
 CONFIG_FILE="${3:-config/config.yaml}"
 MARKER_PATH="/tmp/pyinkdisplay_dev_mode"
-SERVICE_NAME="pyInkDisplay.service"
+SERVICE_NAME="pyInkPictureFrame.service"
 
 echo "Deploying to $TARGET:$REMOTE_DIR ..."
 
