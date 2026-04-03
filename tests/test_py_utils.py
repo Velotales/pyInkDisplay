@@ -27,6 +27,8 @@ Unit tests for pyUtils.py
 
 from unittest.mock import MagicMock, patch
 
+import requests as req
+
 import pyinkdisplay.pyUtils as utils
 
 
@@ -57,7 +59,6 @@ def test_fetchImageFromUrl_success():
 
 def test_fetchImageFromUrl_failure():
     """Returns None when the HTTP request fails after retries."""
-    import requests as req
     with patch("pyinkdisplay.pyUtils._fetchImageAttempt",
                side_effect=req.exceptions.ConnectionError("refused")):
         result = utils.fetchImageFromUrl("http://example.com/image.jpg")
@@ -66,9 +67,9 @@ def test_fetchImageFromUrl_failure():
 
 def test_fetchImageFromUrl_retries_on_request_error():
     """requests.get is called up to 3 times on RequestException."""
-    import requests as req
     with patch("pyinkdisplay.pyUtils.requests.get",
-               side_effect=req.exceptions.ConnectionError("refused")) as mock_get:
+               side_effect=req.exceptions.ConnectionError("refused")) as mock_get, \
+         patch("tenacity.nap.time.sleep"):
         result = utils.fetchImageFromUrl("http://example.com/image.jpg")
     assert result is None
     assert mock_get.call_count == 3
