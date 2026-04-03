@@ -19,6 +19,25 @@ mqtt:
 #  level: "INFO"
 #  labels:
 #    job: "pyInkPictureFrame"
+# Apprise notification configuration
+apprise:
+  url: "http://localhost:8000"       # Apprise container base URL
+  battery_alert_threshold: 20        # Notify when battery drops below this %
+
+# Logging backend configuration
+logging:
+  backend: "console"    # Options: console | seq | syslog | loki (future)
+  level: "INFO"
+  seq:
+    url: "http://localhost:5341"
+  syslog:
+    host: "localhost"
+    port: 514
+  loki:
+    url: "http://localhost:3100/loki/api/v1/push"
+    labels:
+      job: "pyInkPictureFrame"
+
 updater:
   enabled: true        # Set to false to disable auto-update entirely
   force_revert: false  # Set to true to revert to latest release on next USB-power cycle
