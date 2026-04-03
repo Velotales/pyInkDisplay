@@ -350,6 +350,8 @@ def pyInkPictureFrame():
         if alarmManager.isSugarPowered():
             logging.info("PiSugar is powered. Publishing battery level.")
             publishBatteryLevel(alarmManager, mqttConfig)
+            # force_revert intentionally bypasses the is_dev_mode() check in
+            # check_and_apply_update — it is designed to escape dev mode
             if forceRevert:
                 logging.info("force_revert is set. Reverting to latest release tag.")
                 latestTag = get_latest_tag()

@@ -60,6 +60,8 @@ def apply_update(latest_tag: str) -> bool:
             ["git", "checkout", latest_tag], capture_output=True, check=True
         )
         logger.info("Checked out tag %s successfully.", latest_tag)
+        # Note: stale .pyc bytecode may persist after checkout; this is acceptable
+        # because the systemd service restart replaces the running process
         return True
     except subprocess.CalledProcessError as e:
         logger.error("Failed to checkout tag %s: %s", latest_tag, e)
@@ -69,7 +71,7 @@ def apply_update(latest_tag: str) -> bool:
 def restart_service(service_name: str = "pyInkDisplay.service") -> None:
     """Restart the named systemd service via sudo systemctl."""
     try:
-        subprocess.run(["sudo", "systemctl", "restart", service_name], check=True)
+        subprocess.run(["sudo", "systemctl", "restart", service_name], capture_output=True, check=True)
         logger.info("Service %s restarted.", service_name)
     except subprocess.CalledProcessError as e:
         logger.error("Failed to restart service %s: %s", service_name, e)

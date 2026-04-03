@@ -81,7 +81,7 @@ def test_restart_service_calls_systemctl():
     with patch("pyinkdisplay.updater.subprocess.run") as mock_run:
         restart_service("pyInkDisplay.service")
     mock_run.assert_called_once_with(
-        ["sudo", "systemctl", "restart", "pyInkDisplay.service"], check=True
+        ["sudo", "systemctl", "restart", "pyInkDisplay.service"], capture_output=True, check=True
     )
 
 
@@ -116,6 +116,32 @@ def test_check_and_apply_update_skips_when_up_to_date(tmp_path):
     with patch("pyinkdisplay.updater.DEV_MODE_MARKER", marker), \
          patch("pyinkdisplay.updater.get_current_tag", return_value="v2.0.0"), \
          patch("pyinkdisplay.updater.get_latest_tag", return_value="v2.0.0"), \
+         patch("pyinkdisplay.updater.apply_update") as mock_apply:
+        result = check_and_apply_update()
+    assert result is False
+    mock_apply.assert_not_called()
+
+
+def test_check_and_apply_update_returns_false_when_apply_fails(tmp_path):
+    """Returns False when apply_update fails even if a newer tag is available."""
+    marker = tmp_path / "dev_mode"  # does not exist
+    with patch("pyinkdisplay.updater.DEV_MODE_MARKER", marker), \
+         patch("pyinkdisplay.updater.get_current_tag", return_value="v1.0.0"), \
+         patch("pyinkdisplay.updater.get_latest_tag", return_value="v2.0.0"), \
+         patch("pyinkdisplay.updater.apply_update", return_value=False) as mock_apply, \
+         patch("pyinkdisplay.updater.restart_service") as mock_restart:
+        result = check_and_apply_update()
+    assert result is False
+    mock_apply.assert_called_once_with("v2.0.0")
+    mock_restart.assert_not_called()
+
+
+def test_check_and_apply_update_returns_false_when_no_latest_tag(tmp_path):
+    """Returns False when get_latest_tag returns None."""
+    marker = tmp_path / "dev_mode"  # does not exist
+    with patch("pyinkdisplay.updater.DEV_MODE_MARKER", marker), \
+         patch("pyinkdisplay.updater.get_current_tag", return_value="v1.0.0"), \
+         patch("pyinkdisplay.updater.get_latest_tag", return_value=None), \
          patch("pyinkdisplay.updater.apply_update") as mock_apply:
         result = check_and_apply_update()
     assert result is False

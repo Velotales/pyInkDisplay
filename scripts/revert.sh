@@ -2,16 +2,19 @@
 # revert.sh — Restore the Pi to the latest git release tag and remove dev mode.
 #
 # Usage: ./scripts/revert.sh pi@raspberrypi.local
+#
+# Default remote directory: /home/pi/pyInkDisplay
+# Override with a second argument: ./revert.sh pi@host /home/myuser/pyInkDisplay
 
 set -euo pipefail
 
 TARGET="${1:-}"
 if [[ -z "$TARGET" ]]; then
-    echo "Usage: $0 <user@host>"
+    echo "Usage: $0 <user@host> [remote-dir]"
     exit 1
 fi
 
-REMOTE_DIR="/home/pi/pyInkDisplay"
+REMOTE_DIR="${2:-/home/pi/pyInkDisplay}"
 MARKER_PATH="/tmp/pyinkdisplay_dev_mode"
 SERVICE_NAME="pyInkDisplay.service"
 
