@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
-# deploy.sh — Rsync the working directory to a Raspberry Pi and restart the service.
+# deploy.sh — Rsync the working directory to a Raspberry Pi and run it directly.
+#
+# Stops the systemd service and runs pyinkdisplay directly via SSH so that
+# console output streams back to your terminal. Press Ctrl+C to stop.
+# Run ./scripts/revert.sh to restore the service-managed production setup.
 #
 # Usage: ./scripts/deploy.sh pi@raspberrypi.local
 #        ./scripts/deploy.sh pi@192.168.1.100
@@ -34,8 +38,11 @@ rsync -avz --delete \
 echo "Writing dev mode marker on $TARGET ..."
 ssh "$TARGET" "touch $MARKER_PATH"
 
-echo "Restarting $SERVICE_NAME on $TARGET ..."
-ssh "$TARGET" "sudo systemctl restart $SERVICE_NAME"
+echo "Stopping $SERVICE_NAME on $TARGET ..."
+ssh "$TARGET" "sudo systemctl stop $SERVICE_NAME"
 
-echo "Deploy complete. Dev mode is active — auto-update is suppressed."
-echo "Run ./scripts/revert.sh $TARGET to restore the latest release."
+echo "Deploy complete. Running directly (Ctrl+C to stop) ..."
+ssh "$TARGET" "cd $REMOTE_DIR && python3 -m pyinkdisplay -c config/config.yaml"
+
+echo ""
+echo "Run ./scripts/revert.sh $TARGET to restore the latest release and restart the service."
