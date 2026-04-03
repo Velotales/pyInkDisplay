@@ -37,7 +37,7 @@ import yaml  # type: ignore[import-untyped]
 from .mqttDiscovery import publishHaBatteryDiscovery
 from .pyInkDisplay import EPDNotFoundError, PyInkDisplay
 from .pySugarAlarm import PiSugarAlarm
-from .updater import check_and_apply_update
+from .updater import apply_update, check_and_apply_update, get_latest_tag, restart_service
 from .utils import fetchImageFromUrl
 
 # Global variables for signal handler access
@@ -316,6 +316,7 @@ def pyInkPictureFrame():
 
     updaterConfig = config.get("updater", {}) if config else {}
     updaterEnabled = updaterConfig.get("enabled", True)
+    forceRevert = updaterConfig.get("force_revert", False)
 
     setupLogging(merged.get("logging"))
 
@@ -349,7 +350,19 @@ def pyInkPictureFrame():
         if alarmManager.isSugarPowered():
             logging.info("PiSugar is powered. Publishing battery level.")
             publishBatteryLevel(alarmManager, mqttConfig)
-            if updaterEnabled:
+            if forceRevert:
+                logging.info("force_revert is set. Reverting to latest release tag.")
+                latestTag = get_latest_tag()
+                if latestTag:
+                    apply_update(latestTag)
+                    restart_service()
+                    logging.info("Reverted to %s. Service is restarting.", latestTag)
+                    return
+                else:
+                    logging.warning(
+                        "force_revert set but no tags found — skipping revert."
+                    )
+            elif updaterEnabled:
                 logging.info("Checking for updates...")
                 updated = check_and_apply_update()
                 if updated:

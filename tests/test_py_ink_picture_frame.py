@@ -221,3 +221,31 @@ def test_pyInkPictureFrame_skips_update_when_disabled_in_config():
         pyInkPictureFrame()
 
     mock_update.assert_not_called()
+
+
+def test_pyInkPictureFrame_reverts_when_force_revert_set():
+    """When force_revert is true in config, calls apply_update with latest tag and returns."""
+    with patch("pyinkdisplay.pyInkPictureFrame.parseArguments") as mock_args, \
+         patch("pyinkdisplay.pyInkPictureFrame.loadConfig", return_value={"updater": {"enabled": True, "force_revert": True}}), \
+         patch("pyinkdisplay.pyInkPictureFrame.mergeArgsAndConfig", return_value={
+             "epd": "waveshare_epd.epd7in3f", "url": "http://example.com",
+             "alarmMinutes": 20, "noShutdown": True, "logging": None,
+         }), \
+         patch("pyinkdisplay.pyInkPictureFrame.setupLogging"), \
+         patch("pyinkdisplay.pyInkPictureFrame.PyInkDisplay"), \
+         patch("pyinkdisplay.pyInkPictureFrame.fetchImageFromUrl", return_value=MagicMock()), \
+         patch("pyinkdisplay.pyInkPictureFrame.PiSugarAlarm") as mock_alarm_cls, \
+         patch("pyinkdisplay.pyInkPictureFrame.runBatteryMode"), \
+         patch("pyinkdisplay.pyInkPictureFrame.get_latest_tag", return_value="v2.0.0"), \
+         patch("pyinkdisplay.pyInkPictureFrame.apply_update") as mock_apply, \
+         patch("pyinkdisplay.pyInkPictureFrame.restart_service") as mock_restart:
+
+        mock_args.return_value.config = "config.yaml"
+        mock_alarm = MagicMock()
+        mock_alarm.isSugarPowered.return_value = True
+        mock_alarm_cls.return_value = mock_alarm
+
+        pyInkPictureFrame()
+
+    mock_apply.assert_called_once_with("v2.0.0")
+    mock_restart.assert_called_once()

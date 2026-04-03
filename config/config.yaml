@@ -20,4 +20,5 @@ mqtt:
 #  labels:
 #    job: "pyInkPictureFrame"
 updater:
-  enabled: true    # Set to false to disable auto-update entirely
+  enabled: true        # Set to false to disable auto-update entirely
+  force_revert: false  # Set to true to revert to latest release on next USB-power cycle
