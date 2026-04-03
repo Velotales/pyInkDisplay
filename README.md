@@ -7,41 +7,27 @@ My need was to display a Home Assistant dashboard on an e-ink display
 [![Python CI](https://github.com/Velotales/pyInkDisplay/actions/workflows/tests.yml/badge.svg)](https://github.com/Velotales/pyInkDisplay/actions/workflows/tests.yml)
 
 ## Details
+This project takes an image, either locally or remotely, and displays it on an e-ink display.
 
-This project fetches an image from a URL and displays it on an e-ink display. It was built primarily to show a Home Assistant dashboard, and runs on a Raspberry Pi Zero W 2 with a Waveshare 7.3" 7-colour e-ink display, powered by a PiSugar 3 battery with RTC wake scheduling.
+This was written for a Raspberry Pi Zero W 2, using Waveshare's 7.3 inch 7 color e-ink display.
 
----
+To make it a true digital photo frame, I added a PiSugar 3 to provide battery power and the ability to power the Raspberry Pi Zero on with RTC.
 
 ## Power-Aware Runtime
 
-The runtime behaves differently depending on whether the Pi is on battery or USB/mains power.
+Since this runs on battery, I wanted to make sure it does the minimum necessary work when not plugged in.
 
-**Battery mode** — one-shot cycle:
-1. Wake via RTC alarm
-2. Fetch and display image
-3. Publish telemetry to MQTT
-4. Set next RTC alarm
-5. Shut down immediately
+**On battery** it does a single one-shot cycle — wake, fetch image, display it, publish telemetry, set the next RTC alarm, and shut down. No looping, no update checks.
 
-**USB/mains mode** — continuous loop:
-1. Fetch and display image
-2. Publish telemetry to MQTT
-3. Check for a newer release tag; if found, update and restart
-4. Sleep for `alarmMinutes`, then repeat
-
-Power source is detected via the PiSugar. Battery mode is strict: no update checks, no looping.
-
----
+**On USB/mains power** it runs a continuous loop — fetch and display, publish telemetry, check for a newer release and update if one is found, then sleep for `alarmMinutes` and repeat.
 
 ## Image Fallback
 
-If the configured `url` fails to return an image, the display falls back through a chain rather than showing nothing:
+If the configured URL can't be reached, rather than showing a blank screen I've set up a fallback chain:
 
 1. **Image of the day** — fetches from a configured provider (iNaturalist birds or NASA APOD)
-2. **Disk image** — loads a local file from `fallback_file`
-3. **Generated default** — a plain black image with error text
-
-Configure in `config.yaml`:
+2. **A file on disk** — a local image you specify in `fallback_file`
+3. **Generated default** — a plain black image with an error message, so at least something appears
 
 ```yaml
 url: "http://your-home-assistant/dashboard.png"
@@ -51,15 +37,13 @@ image_of_the_day:
   nasa_apod_key: "DEMO_KEY"   # only needed for nasa_apod
 ```
 
-An Apprise notification is sent when the primary fetch fails (see [Notifications](#notifications)).
+## Home Assistant & MQTT Integration
 
----
-
-## Home Assistant & MQTT
-
-MQTT telemetry is published after each cycle using Home Assistant's MQTT Discovery, so sensors appear in Home Assistant automatically with no manual YAML configuration.
+This project supports publishing telemetry to Home Assistant via MQTT, using Home Assistant's MQTT Discovery feature. This means Home Assistant will automatically create sensors with no manual YAML configuration.
 
 ### Sensors
+
+After each cycle the following are published:
 
 | Sensor | Description |
 |--------|-------------|
@@ -71,30 +55,33 @@ MQTT telemetry is published after each cycle using Home Assistant's MQTT Discove
 | `update_available` | `true` / `false` (USB mode only) |
 
 ### Configuration
+Edit your `config/config.yaml` (or `config/config_local.yaml` for local, uncommitted settings) to include the `mqtt` section:
 
 ```yaml
 mqtt:
-  host: "localhost"
+  host: "localhost"   # MQTT broker address
   port: 1883
   topic: "homeassistant/sensor/pisugar_battery/state"
-  username: ""   # optional
-  password: ""   # optional
+  username: ""        # optional
+  password: ""        # optional
 ```
 
 ### Home Assistant Setup
+1. Make sure the [MQTT integration](https://www.home-assistant.io/integrations/mqtt/) is enabled in Home Assistant and connected to your broker.
+2. Start the pyInkPictureFrame service. Sensors will appear automatically in Home Assistant.
+3. Telemetry updates after each display refresh.
 
-1. Enable the [MQTT integration](https://www.home-assistant.io/integrations/mqtt/) and connect it to your broker.
-2. Start the pyInkPictureFrame service — sensors will appear automatically.
-
----
+### Troubleshooting
+- Check the logs for MQTT connection errors.
+- Use the provided `mqtt_test.py` to verify your MQTT broker and Home Assistant discovery setup.
 
 ## Notifications
 
-Push notifications are sent via a local [Apprise](https://github.com/caronc/apprise) container for:
+I've wired up [Apprise](https://github.com/caronc/apprise) for push notifications on key events:
 
 - Image fetch failure
 - Self-update applied (old tag → new tag)
-- Battery below threshold
+- Battery below a configurable threshold
 - Unexpected application error
 
 ```yaml
@@ -103,28 +90,21 @@ apprise:
   battery_alert_threshold: 20   # notify when battery drops below this %
 ```
 
----
-
 ## Self-Update
 
-When running on USB power, the Pi checks for a newer git release tag on each cycle. If one exists, it checks out the new tag and restarts the systemd service automatically.
+When running on USB power, the Pi checks for a newer git release tag on each cycle. If one exists it checks it out and restarts the service automatically. This means I can cut a GitHub release and the Pi will pick it up on its own next time it's plugged in.
 
-Self-update is skipped when:
-- On battery power
-- Dev mode marker is present (set by `deploy.sh`)
-- `updater.enabled: false` in config
+Self-update is skipped on battery, when the dev-mode marker is present, or when `updater.enabled: false`.
 
-To force a revert to the latest release tag on the next USB-power cycle, set `updater.force_revert: true` in `config.yaml`.
-
----
+If something goes wrong and I need to roll back, setting `updater.force_revert: true` in config will revert to the latest release tag on the next USB-power cycle.
 
 ## Dev Deploy Workflow
 
-Development happens on a laptop and is deployed to the Pi over SSH.
+I got tired of SSHing into the Pi to test changes, so I wrote a deploy script that rsyncs from my laptop and runs the app directly so I can see the output.
 
 ### Local config
 
-Create `config/config_local.yaml` with your real settings (it's gitignored). `deploy.sh` picks it up automatically:
+I keep my real settings (IP addresses, MQTT credentials, etc.) in `config/config_local.yaml`, which is gitignored. The deploy script picks it up automatically:
 
 ```yaml
 url: "http://192.168.1.x:8123/path/to/dashboard.png"
@@ -134,36 +114,29 @@ mqtt:
   password: "mypassword"
 ```
 
-### Deploy and run
+### Deploying
 
 ```bash
 ./scripts/deploy.sh pi@raspberrypi.local
-# or with a custom config:
+# or override the remote dir and config:
 ./scripts/deploy.sh pi@raspberrypi.local /home/pi/pyInkDisplay config/my_config.yaml
 ```
 
-This will:
-1. Rsync the working directory to the Pi (excluding `.git`, `.venv`, `__pycache__`, etc.)
-2. Set up a venv on the Pi and install from `requirements.in` (skipped if unchanged)
-3. Stop the `pyInkPictureFrame.service`
-4. Run `pyinkdisplay` directly — output streams back to your terminal
-5. Write a dev-mode marker that disables auto-update while testing
+This rsyncs the project, sets up the venv (skipping pip if `requirements.in` hasn't changed), stops the service, and runs `pyinkdisplay` directly so output streams back to my terminal. Press Ctrl+C to stop — it kills the remote process cleanly.
 
-Press Ctrl+C to stop. The remote Python process is killed cleanly.
+While the dev-mode marker is present, self-update is disabled so it won't overwrite my test code.
 
-### Revert to latest release
+### Reverting
 
 ```bash
 ./scripts/revert.sh pi@raspberrypi.local
 ```
 
-Removes the dev-mode marker, checks out the latest git release tag, and restarts the service.
-
----
+Removes the dev-mode marker, checks out the latest release tag, and restarts the service.
 
 ## Logging
 
-The logging backend is configurable in `config.yaml`:
+I've made the logging backend configurable so I can point it at Seq or syslog without changing any code:
 
 ```yaml
 logging:
@@ -176,36 +149,42 @@ logging:
     port: 514
 ```
 
----
-
 ## Libraries
-
-This project uses Rob Weber's [Omni-EPD](https://github.com/robweber/omni-epd/) for display support, so it should work with most e-ink displays. Display settings (mode, palette, brightness, contrast, sharpness) are configured in `waveshare_epd.epd7in3f.ini` at the project root — omni-epd picks this up automatically.
+This project pulls in Rob Weber's [Omni-EPD](https://github.com/robweber/omni-epd/), so it "should" work with most e-ink displays. Display settings (mode, palette, brightness, contrast, sharpness) live in `waveshare_epd.epd7in3f.ini` at the project root — omni-epd picks this up automatically based on the EPD type in config.
 
 I also made use of the [PiSugar python library](https://github.com/PiSugar/pisugar-python) to control the PiSugar and set the next wakeup interval.
 
-Dependencies are managed with `requirements.in`. The deploy script installs directly from it on the Pi (with checksum caching to skip reinstalls when nothing has changed). For local development:
+I found this to be quite a dependency nightmare, so included in the repo is a `requirements.in`. To use, follow this, preferably in a virtual environment:
 
-1. **Install `pip-tools`:** `pip install pip-tools`
-2. **Compile:** `pip-compile requirements.in`
-3. **Install:** `pip install -r requirements.txt`
+1.  **Install `pip-tools`:** `pip install pip-tools`
+2.  **Compile:** `pip-compile requirements.in`
+3.  **Install:** `pip install -r requirements.txt`
 
----
+(The deploy script handles this automatically on the Pi, installing directly from `requirements.in` and caching a checksum so it skips the install if nothing has changed.)
 
 ## Systemd
 
-The service file is at `config/pyInkPictureFrame.service`.
+I've added a basic systemd service file at `config/pyInkPictureFrame.service` that can be used to run this on startup.
 
-```bash
-sudo systemctl daemon-reload
-sudo systemctl enable pyInkPictureFrame.service
-sudo systemctl start pyInkPictureFrame.service
-sudo systemctl status pyInkPictureFrame.service
-sudo systemctl stop pyInkPictureFrame.service
-sudo systemctl disable pyInkPictureFrame.service
-```
+Here are the commands to manage your systemd service:
 
----
+1.  **Reload:** `sudo systemctl daemon-reload` — Reload the systemd daemon configuration. This is necessary after creating or modifying a service file.
+
+2.  **Enable:** `sudo systemctl enable pyInkPictureFrame.service` — Enable the service to start automatically at boot.
+
+3.  **Start:** `sudo systemctl start pyInkPictureFrame.service` — Start the service immediately.
+
+4.  **Status:** `sudo systemctl status pyInkPictureFrame.service` — Show the current status of the service (running, stopped, errors, etc.).
+
+5.  **Stop:** `sudo systemctl stop pyInkPictureFrame.service` — Stop the service.
+
+6.  **Disable:** `sudo systemctl disable pyInkPictureFrame.service` — Prevent the service from starting automatically at boot.
+
+## Similar work
+This project was inspired by several e-ink display projects including:
+
+* [pycasso](https://github.com/jezs00/pycasso) - System to send AI generated art to an E-Paper display through a Raspberry PI unit.
+* [PiArtFrame](https://github.com/runezor/PiArtFrame) - EPD project that displays randomly generated fractal art.
 
 ## CI & Raspberry Pi Runner
 
@@ -215,21 +194,13 @@ This repository includes a GitHub Actions workflow that:
 - Optionally runs tests on a Raspberry Pi self-hosted runner (ARM) using the compiled requirements.
 
 ### Set up a Raspberry Pi self-hosted runner (optional)
-
 1. In GitHub, navigate to: Settings → Actions → Runners → New self-hosted runner.
 2. Choose Linux and follow the on-screen instructions to download and configure the runner on your Raspberry Pi.
 3. Add labels to the runner so the workflow can target it. At minimum:
-   - `self-hosted`, `linux`, `arm` (or `arm64` if applicable)
+	- `self-hosted`, `linux`, `arm` (or `arm64` if applicable)
 4. Start the runner service.
 
 The workflow includes these jobs:
-- **Compile** (Ubuntu): generates `requirements.txt` and `requirements-dev.txt` artifacts from `.in` sources.
-- **Lint** (Ubuntu): installs dev-only requirements and runs `black`, `isort`, `flake8`, `bandit`, and `mypy` across Python 3.9–3.11.
-- **Tests** (Pi): runs `pytest` only on a self-hosted Raspberry Pi runner, is skipped on pull requests, and marked optional (`continue-on-error`) until a Pi runner is available.
-
----
-
-## Similar Work
-
-* [pycasso](https://github.com/jezs00/pycasso) — System to send AI generated art to an E-Paper display through a Raspberry PI unit.
-* [PiArtFrame](https://github.com/runezor/PiArtFrame) — EPD project that displays randomly generated fractal art.
+- Compile (Ubuntu): generates `requirements.txt` and `requirements-dev.txt` artifacts from `.in` sources.
+- Lint (Ubuntu): installs dev-only requirements and runs `black`, `isort`, `flake8`, `bandit`, and `mypy` across Python 3.9–3.11.
+- Tests (Pi): runs `pytest` only on a self-hosted Raspberry Pi runner, is skipped on pull requests, and marked optional (`continue-on-error`) until a Pi runner is available.
