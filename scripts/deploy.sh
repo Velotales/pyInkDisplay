@@ -21,7 +21,12 @@ if [[ -z "$TARGET" ]]; then
 fi
 
 REMOTE_DIR="${2:-/home/pi/pyInkDisplay}"
-CONFIG_FILE="${3:-config/config.yaml}"
+# Use config_local.yaml if it exists and no config was explicitly provided
+if [[ -z "${3:-}" && -f "config/config_local.yaml" ]]; then
+    CONFIG_FILE="config/config_local.yaml"
+else
+    CONFIG_FILE="${3:-config/config.yaml}"
+fi
 MARKER_PATH="/tmp/pyinkdisplay_dev_mode"
 SERVICE_NAME="pyInkPictureFrame.service"
 
@@ -57,7 +62,7 @@ echo "Stopping $SERVICE_NAME on $TARGET ..."
 ssh "$TARGET" "sudo systemctl stop $SERVICE_NAME"
 
 echo "Deploy complete. Running directly (Ctrl+C to stop) ..."
-ssh "$TARGET" "cd $REMOTE_DIR && .venv/bin/python3 -m pyinkdisplay -c $CONFIG_FILE"
+ssh -t "$TARGET" "cd $REMOTE_DIR && .venv/bin/python3 -m pyinkdisplay -c $CONFIG_FILE"
 
 echo ""
 echo "Run ./scripts/revert.sh $TARGET to restore the latest release and restart the service."
