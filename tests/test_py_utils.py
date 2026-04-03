@@ -92,3 +92,41 @@ def test_createDefaultImage():
         mock_draw.assert_called_once_with(mock_image)
         mock_draw_instance.text.assert_called_once()
         assert result == mock_image
+
+
+def test_fetchFallbackImage_uses_image_of_the_day_first():
+    """Calls fetchImageOfTheDay and returns its result when it succeeds."""
+    mock_image = MagicMock()
+    iotd_config = {"provider": "inaturalist"}
+    with patch("pyinkdisplay.pyUtils.fetchImageOfTheDay", return_value=mock_image) as mock_iotd:
+        result = utils.fetchFallbackImage(fallback_file=None, iotd_config=iotd_config)
+    mock_iotd.assert_called_once_with(iotd_config)
+    assert result == mock_image
+
+
+def test_fetchFallbackImage_loads_from_disk_when_iotd_fails():
+    """Falls through to disk image when image-of-the-day returns None."""
+    mock_image = MagicMock()
+    with patch("pyinkdisplay.pyUtils.fetchImageOfTheDay", return_value=None), \
+         patch("pyinkdisplay.pyUtils.Image.open", return_value=mock_image):
+        result = utils.fetchFallbackImage(fallback_file="/some/image.png", iotd_config=None)
+    assert result == mock_image
+
+
+def test_fetchFallbackImage_uses_default_when_disk_load_fails():
+    """Falls through to _createDefaultImage when disk load raises."""
+    mock_image = MagicMock()
+    with patch("pyinkdisplay.pyUtils.fetchImageOfTheDay", return_value=None), \
+         patch("pyinkdisplay.pyUtils.Image.open", side_effect=OSError("not found")), \
+         patch("pyinkdisplay.pyUtils._createDefaultImage", return_value=mock_image):
+        result = utils.fetchFallbackImage(fallback_file="/missing.png", iotd_config=None)
+    assert result == mock_image
+
+
+def test_fetchFallbackImage_uses_default_when_nothing_configured():
+    """Falls straight to _createDefaultImage when no fallback is configured."""
+    mock_image = MagicMock()
+    with patch("pyinkdisplay.pyUtils.fetchImageOfTheDay", return_value=None), \
+         patch("pyinkdisplay.pyUtils._createDefaultImage", return_value=mock_image):
+        result = utils.fetchFallbackImage(fallback_file=None, iotd_config=None)
+    assert result == mock_image

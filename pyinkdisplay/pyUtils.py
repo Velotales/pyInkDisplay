@@ -79,3 +79,36 @@ def fetchImageFromUrl(url: str) -> Optional[Image.Image]:
     except Exception as e:
         logger.error("Failed to fetch image from %s after retries: %s", url, e)
         return None
+
+
+def fetchFallbackImage(
+    fallback_file: Optional[str],
+    iotd_config: Optional[dict],
+) -> Image.Image:
+    """
+    Return a fallback image using the chain:
+    1. Image of the day (if provider configured)
+    2. Image loaded from disk (if fallback_file configured)
+    3. Generated default image (always available)
+    """
+    image = fetchImageOfTheDay(iotd_config)
+    if image is not None:
+        logger.info("Image of the day fetched successfully.")
+        return image
+
+    if fallback_file:
+        try:
+            image = Image.open(fallback_file)
+            logger.info("Loaded fallback image from disk: %s", fallback_file)
+            return image
+        except Exception as e:
+            logger.warning("Failed to load fallback file %s: %s", fallback_file, e)
+
+    logger.warning("All fallbacks failed. Using generated default image.")
+    return _createDefaultImage()
+
+
+# Deferred import to avoid circular dependency:
+# pyImageOfTheDay imports fetchImageFromUrl from this module, so we import
+# fetchImageOfTheDay only after all functions in this module are defined.
+from .pyImageOfTheDay import fetchImageOfTheDay  # noqa: E402
