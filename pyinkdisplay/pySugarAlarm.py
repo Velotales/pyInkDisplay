@@ -46,16 +46,16 @@ except ImportError:
         def __init__(self, *args, **kwargs):
             logger.warning("Dummy PiSugarServer initialized. PiSugar module not found.")
 
-        def get_rtc_time(self):
+        def getRtcTime(self):
             raise PiSugarConnectionError("PiSugar module not available.")
 
-        def get_battery_power_plugged(self):
+        def getBatteryPowerPlugged(self):
             raise PiSugarConnectionError("PiSugar module not available.")
 
         def rtc_pi2rtc(self):
             raise PiSugarConnectionError("PiSugar module not available.")
 
-        def rtc_alarm_set(self, *args, **kwargs):
+        def rtcAlarmSet(self, *args, **kwargs):
             raise PiSugarConnectionError("PiSugar module not available.")
 
     def connect_tcp(*args, **kwargs):  # type: ignore[no-redef]
@@ -82,7 +82,7 @@ class PiSugarAlarm:
     checks, RTC synchronization, and alarm setting.
     """
 
-    def get_battery_level(self, retries=3, delay=2) -> int:
+    def getBatteryLevel(self, retries=3, delay=2) -> int:
         """
         Gets the current battery level (percentage) from the PiSugar board.
         Returns:
@@ -118,13 +118,13 @@ class PiSugarAlarm:
                 )
             if attempt < retries:
                 logger.info(
-                    "Retrying get_battery_level in %s seconds (attempt %s/%s)...",
+                    "Retrying getBatteryLevel in %s seconds (attempt %s/%s)...",
                     delay,
                     attempt + 1,
                     retries,
                 )
                 time.sleep(delay)
-        logger.error("get_battery_level failed after %s attempts.", retries)
+        logger.error("getBatteryLevel failed after %s attempts.", retries)
         assert lastException is not None
         raise lastException
 

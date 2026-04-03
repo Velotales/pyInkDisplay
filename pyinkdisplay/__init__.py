@@ -23,7 +23,7 @@ SOFTWARE.
 
 """
 
-from . import utils
+from . import pyUtils
 from .pyInkDisplay import EPDNotFoundError, PyInkDisplay
 from .pySugarAlarm import PiSugarAlarm, PiSugarConnectionError, PiSugarError
 
@@ -33,7 +33,7 @@ __all__ = [
     "PiSugarAlarm",
     "PiSugarConnectionError",
     "PiSugarError",
-    "utils",
+    "pyUtils",
 ]
 
 __version__ = "1.0.0"

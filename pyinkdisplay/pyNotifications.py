@@ -13,7 +13,7 @@ import requests
 logger = logging.getLogger(__name__)
 
 
-def send_notification(apprise_url: str, title: str, message: str) -> bool:
+def sendNotification(apprise_url: str, title: str, message: str) -> bool:
     """
     Send a notification via the Apprise container REST API.
 
@@ -40,7 +40,7 @@ def send_notification(apprise_url: str, title: str, message: str) -> bool:
         return False
 
 
-def notify_if_configured(
+def notifyIfConfigured(
     apprise_config: Optional[dict], title: str, message: str
 ) -> None:
     """
@@ -53,4 +53,4 @@ def notify_if_configured(
     """
     if not apprise_config or not apprise_config.get("url"):
         return
-    send_notification(apprise_config["url"], title, message)
+    sendNotification(apprise_config["url"], title, message)

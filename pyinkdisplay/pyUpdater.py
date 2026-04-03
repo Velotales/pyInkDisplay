@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 DEV_MODE_MARKER = Path("/tmp/pyinkdisplay_dev_mode")
 
 
-def get_current_tag() -> Optional[str]:
+def getCurrentTag() -> Optional[str]:
     """Return the current git tag if HEAD is exactly on a tag, else None."""
     try:
         result = subprocess.run(
@@ -29,7 +29,7 @@ def get_current_tag() -> Optional[str]:
         return None
 
 
-def get_latest_tag() -> Optional[str]:
+def getLatestTag() -> Optional[str]:
     """Fetch remote tags and return the latest semver-sorted tag, or None on failure."""
     try:
         subprocess.run(["git", "fetch", "--tags"], capture_output=True, check=True)
@@ -46,14 +46,14 @@ def get_latest_tag() -> Optional[str]:
         return None
 
 
-def is_dev_mode(marker_path: Optional[Path] = None) -> bool:
+def isDevMode(marker_path: Optional[Path] = None) -> bool:
     """Return True if the dev mode marker file is present."""
     if marker_path is None:
         marker_path = DEV_MODE_MARKER
     return marker_path.exists()
 
 
-def apply_update(latest_tag: str) -> bool:
+def applyUpdate(latest_tag: str) -> bool:
     """Checkout the given tag. Returns True on success, False on failure."""
     try:
         subprocess.run(
@@ -68,7 +68,7 @@ def apply_update(latest_tag: str) -> bool:
         return False
 
 
-def restart_service(service_name: str = "pyInkDisplay.service") -> None:
+def restartService(service_name: str = "pyInkDisplay.service") -> None:
     """Restart the named systemd service via sudo systemctl."""
     try:
         subprocess.run(["sudo", "systemctl", "restart", service_name], capture_output=True, check=True)
@@ -77,19 +77,19 @@ def restart_service(service_name: str = "pyInkDisplay.service") -> None:
         logger.error("Failed to restart service %s: %s", service_name, e)
 
 
-def check_and_apply_update() -> bool:
+def checkAndApplyUpdate() -> bool:
     """
     Check for a newer release tag and apply it if available.
 
     Skips entirely when the dev mode marker file is present.
     Returns True if an update was applied (and the service is restarting).
     """
-    if is_dev_mode():
+    if isDevMode():
         logger.info("Dev mode active — skipping update check.")
         return False
 
-    current = get_current_tag()
-    latest = get_latest_tag()
+    current = getCurrentTag()
+    latest = getLatestTag()
 
     if not latest:
         logger.warning("Could not determine latest tag — skipping update.")
@@ -102,8 +102,8 @@ def check_and_apply_update() -> bool:
     logger.info(
         "New release available: %s (current: %s). Applying update.", latest, current
     )
-    if apply_update(latest):
-        restart_service()
+    if applyUpdate(latest):
+        restartService()
         return True
 
     return False

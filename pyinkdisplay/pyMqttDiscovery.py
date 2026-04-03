@@ -115,7 +115,7 @@ _DEVICE = {
 }
 
 
-def _mqtt_client(mqtt_config: dict):
+def _mqttClient(mqtt_config: dict):
     """Create and connect a paho MQTT client."""
     client = mqtt.Client(protocol=mqtt.MQTTv5)
     if mqtt_config.get("username"):
@@ -136,7 +136,7 @@ def publishHaTelemetryDiscovery(mqtt_config: dict) -> None:
     Call once at startup alongside publishHaBatteryDiscovery.
     """
     try:
-        client = _mqtt_client(mqtt_config)
+        client = _mqttClient(mqtt_config)
         client.loop_start()
         for sensor in _TELEMETRY_SENSORS:
             discovery_topic = (
@@ -171,7 +171,7 @@ def publishHaTelemetry(mqtt_config: dict, telemetry: dict) -> None:
             image_fetch_status, power_mode, software_version, update_available.
     """
     try:
-        client = _mqtt_client(mqtt_config)
+        client = _mqttClient(mqtt_config)
         client.loop_start()
         client.publish(STATE_TOPIC, json.dumps(telemetry), retain=True)
         client.loop_stop()

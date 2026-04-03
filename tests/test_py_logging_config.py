@@ -1,13 +1,13 @@
 import logging
 from unittest.mock import MagicMock, patch
 
-from pyinkdisplay.logging_config import setup_logging
+from pyinkdisplay.pyLoggingConfig import setupLogging
 
 
 def test_setup_logging_console_calls_basicConfig():
     """Console backend calls logging.basicConfig with INFO level."""
-    with patch("pyinkdisplay.logging_config.logging.basicConfig") as mock_config:
-        setup_logging({"backend": "console", "level": "INFO"})
+    with patch("pyinkdisplay.pyLoggingConfig.logging.basicConfig") as mock_config:
+        setupLogging({"backend": "console", "level": "INFO"})
     mock_config.assert_called_once()
     call_kwargs = mock_config.call_args[1]
     assert call_kwargs["level"] == logging.INFO
@@ -15,22 +15,22 @@ def test_setup_logging_console_calls_basicConfig():
 
 def test_setup_logging_defaults_to_console():
     """Empty config dict uses console backend at INFO level."""
-    with patch("pyinkdisplay.logging_config.logging.basicConfig") as mock_config:
-        setup_logging({})
+    with patch("pyinkdisplay.pyLoggingConfig.logging.basicConfig") as mock_config:
+        setupLogging({})
     mock_config.assert_called_once()
 
 
 def test_setup_logging_syslog_adds_handler():
     """Syslog backend adds a SysLogHandler to the root logger."""
     with patch(
-        "pyinkdisplay.logging_config.logging.handlers.SysLogHandler"
+        "pyinkdisplay.pyLoggingConfig.logging.handlers.SysLogHandler"
     ) as mock_handler_cls, \
-         patch("pyinkdisplay.logging_config.logging.getLogger") as mock_get_logger:
+         patch("pyinkdisplay.pyLoggingConfig.logging.getLogger") as mock_get_logger:
         mock_root = MagicMock()
         mock_get_logger.return_value = mock_root
         mock_handler_cls.return_value = MagicMock()
 
-        setup_logging({
+        setupLogging({
             "backend": "syslog",
             "level": "WARNING",
             "syslog": {"host": "logserver.local", "port": "514"},
@@ -43,9 +43,9 @@ def test_setup_logging_syslog_adds_handler():
 
 def test_setup_logging_loki_falls_back_to_console():
     """Loki backend logs a warning and falls back to console."""
-    with patch("pyinkdisplay.logging_config.logging.basicConfig") as mock_config, \
-         patch("pyinkdisplay.logging_config.logging.warning") as mock_warning:
-        setup_logging({"backend": "loki"})
+    with patch("pyinkdisplay.pyLoggingConfig.logging.basicConfig") as mock_config, \
+         patch("pyinkdisplay.pyLoggingConfig.logging.warning") as mock_warning:
+        setupLogging({"backend": "loki"})
     mock_config.assert_called_once()
     mock_warning.assert_called_once()
 
@@ -55,7 +55,7 @@ def test_setup_logging_seq_calls_seqlog(monkeypatch):
     mock_seqlog = MagicMock()
     monkeypatch.setitem(__import__("sys").modules, "seqlog", mock_seqlog)
 
-    setup_logging({
+    setupLogging({
         "backend": "seq",
         "level": "DEBUG",
         "seq": {"url": "http://seq.local:5341"},
@@ -70,11 +70,11 @@ def test_setup_logging_seq_calls_seqlog(monkeypatch):
 
 def test_setup_logging_seq_falls_back_when_seqlog_missing():
     """Falls back to console logging when seqlog is not installed."""
-    with patch("pyinkdisplay.logging_config.logging.basicConfig") as mock_config, \
+    with patch("pyinkdisplay.pyLoggingConfig.logging.basicConfig") as mock_config, \
          patch("builtins.__import__", side_effect=lambda name, *a, **kw: (
              (_ for _ in ()).throw(ImportError())
              if name == "seqlog"
              else __import__(name, *a, **kw)
          )):
-        setup_logging({"backend": "seq", "seq": {"url": "http://seq.local:5341"}})
+        setupLogging({"backend": "seq", "seq": {"url": "http://seq.local:5341"}})
     mock_config.assert_called_once()

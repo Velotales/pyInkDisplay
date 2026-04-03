@@ -11,7 +11,7 @@ import logging.handlers
 _FMT = "%(asctime)s - %(levelname)s - %(module)s:%(funcName)s - %(message)s"
 
 
-def setup_logging(config: dict) -> None:
+def setupLogging(config: dict) -> None:
     """
     Configure the root logger from the 'logging' section of config.yaml.
 
@@ -28,9 +28,9 @@ def setup_logging(config: dict) -> None:
     level = getattr(logging, level_name, logging.INFO)
 
     if backend == "seq":
-        _setup_seq(config.get("seq", {}), level)
+        _setupSeq(config.get("seq", {}), level)
     elif backend == "syslog":
-        _setup_syslog(config.get("syslog", {}), level)
+        _setupSyslog(config.get("syslog", {}), level)
     elif backend == "loki":
         logging.basicConfig(level=level, format=_FMT)
         logging.warning(
@@ -42,7 +42,7 @@ def setup_logging(config: dict) -> None:
         logging.info("Console logging enabled.")
 
 
-def _setup_seq(seq_config: dict, level: int) -> None:
+def _setupSeq(seq_config: dict, level: int) -> None:
     """Configure Seq structured logging via the seqlog package."""
     try:
         import seqlog  # type: ignore[import-untyped]
@@ -61,7 +61,7 @@ def _setup_seq(seq_config: dict, level: int) -> None:
         )
 
 
-def _setup_syslog(syslog_config: dict, level: int) -> None:
+def _setupSyslog(syslog_config: dict, level: int) -> None:
     """Configure remote syslog via SysLogHandler."""
     handler = logging.handlers.SysLogHandler(
         address=(

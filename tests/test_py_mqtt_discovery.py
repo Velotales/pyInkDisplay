@@ -1,7 +1,7 @@
 import json
 from unittest.mock import MagicMock, patch
 
-from pyinkdisplay.mqttDiscovery import publishHaTelemetry, publishHaTelemetryDiscovery
+from pyinkdisplay.pyMqttDiscovery import publishHaTelemetry, publishHaTelemetryDiscovery
 
 
 MQTT_CONFIG = {"host": "localhost", "port": 1883}
@@ -17,7 +17,7 @@ def test_publishHaTelemetry_publishes_json_payload():
         "software_version": "v1.2.0",
         "update_available": False,
     }
-    with patch("pyinkdisplay.mqttDiscovery.mqtt.Client") as mock_client_cls:
+    with patch("pyinkdisplay.pyMqttDiscovery.mqtt.Client") as mock_client_cls:
         mock_client = MagicMock()
         mock_client_cls.return_value = mock_client
 
@@ -31,7 +31,7 @@ def test_publishHaTelemetry_publishes_json_payload():
 
 def test_publishHaTelemetryDiscovery_publishes_discovery_for_all_sensors():
     """Publishes one HA discovery message per telemetry sensor field."""
-    with patch("pyinkdisplay.mqttDiscovery.mqtt.Client") as mock_client_cls:
+    with patch("pyinkdisplay.pyMqttDiscovery.mqtt.Client") as mock_client_cls:
         mock_client = MagicMock()
         mock_client_cls.return_value = mock_client
 

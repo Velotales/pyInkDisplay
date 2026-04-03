@@ -22,19 +22,19 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-Unit tests for utils.py
+Unit tests for pyUtils.py
 """
 
 from unittest.mock import MagicMock, patch
 
-import pyinkdisplay.utils as utils
+import pyinkdisplay.pyUtils as utils
 
 
 def test_fetchImageFromUrl_success():
     """Test successful image download from URL."""
-    with patch("pyinkdisplay.utils.requests.get") as mock_get, patch(
-        "pyinkdisplay.utils.BytesIO"
-    ) as mock_bytesio, patch("pyinkdisplay.utils.Image.open") as mock_image_open:
+    with patch("pyinkdisplay.pyUtils.requests.get") as mock_get, patch(
+        "pyinkdisplay.pyUtils.BytesIO"
+    ) as mock_bytesio, patch("pyinkdisplay.pyUtils.Image.open") as mock_image_open:
         mock_response = MagicMock()
         mock_response.content = b"fake image data"
         mock_response.raise_for_status = MagicMock()
@@ -57,8 +57,8 @@ def test_fetchImageFromUrl_success():
 
 def test_fetchImageFromUrl_failure():
     """Test failure in image download, returns default image."""
-    with patch("pyinkdisplay.utils.requests.get") as mock_get, patch(
-        "pyinkdisplay.utils._createDefaultImage"
+    with patch("pyinkdisplay.pyUtils.requests.get") as mock_get, patch(
+        "pyinkdisplay.pyUtils._createDefaultImage"
     ) as mock_default:
         mock_get.side_effect = Exception("Network error")
 
@@ -73,8 +73,8 @@ def test_fetchImageFromUrl_failure():
 
 def test_createDefaultImage():
     """Test creating a default fallback image."""
-    with patch("pyinkdisplay.utils.Image.new") as mock_image_new, patch(
-        "pyinkdisplay.utils.ImageDraw.Draw"
+    with patch("pyinkdisplay.pyUtils.Image.new") as mock_image_new, patch(
+        "pyinkdisplay.pyUtils.ImageDraw.Draw"
     ) as mock_draw:
         mock_image = MagicMock()
         mock_image_new.return_value = mock_image

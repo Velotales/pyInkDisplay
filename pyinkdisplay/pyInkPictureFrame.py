@@ -35,23 +35,23 @@ from datetime import datetime, timezone
 import paho.mqtt.client as mqtt
 import yaml  # type: ignore[import-untyped]
 
-from .mqttDiscovery import (
+from .pyMqttDiscovery import (
     publishHaBatteryDiscovery,
     publishHaTelemetry,
     publishHaTelemetryDiscovery,
 )
 from .pyInkDisplay import EPDNotFoundError, PyInkDisplay
 from .pySugarAlarm import PiSugarAlarm
-from .updater import (
-    apply_update,
-    check_and_apply_update,
-    get_current_tag,
-    get_latest_tag,
-    restart_service,
+from .pyUpdater import (
+    applyUpdate,
+    checkAndApplyUpdate,
+    getCurrentTag,
+    getLatestTag,
+    restartService,
 )
-from .logging_config import setup_logging
-from .notifications import notify_if_configured
-from .utils import fetchImageFromUrl
+from .pyLoggingConfig import setupLogging
+from .pyNotifications import notifyIfConfigured
+from .pyUtils import fetchImageFromUrl
 
 # Global variables for signal handler access
 displayManager = None
@@ -164,7 +164,7 @@ def publishBatteryLevel(alarmManager, mqttConfig):
     Publishes the PiSugar battery level to the configured MQTT broker.
     """
     try:
-        batteryLevel = alarmManager.get_battery_level()
+        batteryLevel = alarmManager.getBatteryLevel()
     except Exception as e:
         logging.error("Failed to get battery level for MQTT publish: %s", e)
         return
@@ -321,7 +321,7 @@ def pyInkPictureFrame():
     appriseConfig = config.get("apprise") if config else None
 
     loggingConfig = config.get("logging", {}) if config else {}
-    setup_logging(loggingConfig)
+    setupLogging(loggingConfig)
 
     # Publish Home Assistant MQTT discovery if MQTT is configured
     if mqttConfig:
@@ -342,7 +342,7 @@ def pyInkPictureFrame():
         image = fetchImageFromUrl(merged["url"])
         if image is None:
             logging.warning("Image fetch returned None — using fallback.")
-            notify_if_configured(
+            notifyIfConfigured(
                 appriseConfig,
                 "pyInkDisplay: Image Fetch Failed",
                 f"Failed to fetch image from {merged['url']}",
@@ -361,7 +361,7 @@ def pyInkPictureFrame():
         powerMode = "usb" if alarmManager.isSugarPowered() else "battery"
 
         try:
-            batteryLevel = alarmManager.get_battery_level()
+            batteryLevel = alarmManager.getBatteryLevel()
         except Exception:
             batteryLevel = None
 
@@ -370,7 +370,7 @@ def pyInkPictureFrame():
             "last_update_time": datetime.now(timezone.utc).isoformat(),
             "image_fetch_status": imageFetchStatus,
             "power_mode": powerMode,
-            "software_version": get_current_tag() or "unknown",
+            "software_version": getCurrentTag() or "unknown",
             # update_available: computed after check_and_apply_update below;
             # always False here (USB path updates telemetry before the check)
             "update_available": False,
@@ -383,7 +383,7 @@ def pyInkPictureFrame():
             appriseConfig.get("battery_alert_threshold", 0) if appriseConfig else 0
         )
         if batteryLevel is not None and batteryThreshold and batteryLevel < batteryThreshold:
-            notify_if_configured(
+            notifyIfConfigured(
                 appriseConfig,
                 "pyInkDisplay: Low Battery",
                 f"Battery level is {batteryLevel}% (threshold: {batteryThreshold}%)",
@@ -395,10 +395,10 @@ def pyInkPictureFrame():
             # check_and_apply_update — it is designed to escape dev mode
             if forceRevert:
                 logging.info("force_revert is set. Reverting to latest release tag.")
-                latestTag = get_latest_tag()
+                latestTag = getLatestTag()
                 if latestTag:
-                    apply_update(latestTag)
-                    restart_service()
+                    applyUpdate(latestTag)
+                    restartService()
                     logging.info("Reverted to %s. Service is restarting.", latestTag)
                     return
                 else:
@@ -407,9 +407,9 @@ def pyInkPictureFrame():
                     )
             elif updaterEnabled:
                 logging.info("Checking for updates...")
-                updated = check_and_apply_update()
+                updated = checkAndApplyUpdate()
                 if updated:
-                    notify_if_configured(
+                    notifyIfConfigured(
                         appriseConfig,
                         "pyInkDisplay: Update Applied",
                         "Updated to latest release. Service is restarting.",
@@ -436,11 +436,11 @@ def pyInkPictureFrame():
 
     except (EPDNotFoundError, RuntimeError) as e:
         logging.error("EPD display error: %s", e)
-        notify_if_configured(appriseConfig, "pyInkDisplay: EPD Error", str(e))
+        notifyIfConfigured(appriseConfig, "pyInkDisplay: EPD Error", str(e))
         sys.exit(1)
     except Exception as e:
         logging.error("An unexpected error occurred during EPD display: %s", e)
-        notify_if_configured(appriseConfig, "pyInkDisplay: Unexpected Error", str(e))
+        notifyIfConfigured(appriseConfig, "pyInkDisplay: Unexpected Error", str(e))
         sys.exit(1)
     finally:
         if displayManager:

@@ -115,7 +115,7 @@ def test_pyInkPictureFrame_calls_runBatteryMode_when_not_powered():
              "epd": "waveshare_epd.epd7in3f", "url": "http://example.com",
              "alarmMinutes": 20, "noShutdown": True, "logging": None,
          }), \
-         patch("pyinkdisplay.pyInkPictureFrame.setup_logging"), \
+         patch("pyinkdisplay.pyInkPictureFrame.setupLogging"), \
          patch("pyinkdisplay.pyInkPictureFrame.PyInkDisplay") as mock_display, \
          patch("pyinkdisplay.pyInkPictureFrame.fetchImageFromUrl", return_value=MagicMock()), \
          patch("pyinkdisplay.pyInkPictureFrame.PiSugarAlarm") as mock_alarm_cls, \
@@ -141,7 +141,7 @@ def test_pyInkPictureFrame_calls_continuousLoop_when_powered():
              "epd": "waveshare_epd.epd7in3f", "url": "http://example.com",
              "alarmMinutes": 20, "noShutdown": True, "logging": None,
          }), \
-         patch("pyinkdisplay.pyInkPictureFrame.setup_logging"), \
+         patch("pyinkdisplay.pyInkPictureFrame.setupLogging"), \
          patch("pyinkdisplay.pyInkPictureFrame.PyInkDisplay") as mock_display, \
          patch("pyinkdisplay.pyInkPictureFrame.fetchImageFromUrl", return_value=MagicMock()), \
          patch("pyinkdisplay.pyInkPictureFrame.PiSugarAlarm") as mock_alarm_cls, \
@@ -167,12 +167,12 @@ def test_pyInkPictureFrame_checks_for_update_when_usb_powered():
              "epd": "waveshare_epd.epd7in3f", "url": "http://example.com",
              "alarmMinutes": 20, "noShutdown": True, "logging": None,
          }), \
-         patch("pyinkdisplay.pyInkPictureFrame.setup_logging"), \
+         patch("pyinkdisplay.pyInkPictureFrame.setupLogging"), \
          patch("pyinkdisplay.pyInkPictureFrame.PyInkDisplay"), \
          patch("pyinkdisplay.pyInkPictureFrame.fetchImageFromUrl", return_value=MagicMock()), \
          patch("pyinkdisplay.pyInkPictureFrame.PiSugarAlarm") as mock_alarm_cls, \
          patch("pyinkdisplay.pyInkPictureFrame.publishBatteryLevel"), \
-         patch("pyinkdisplay.pyInkPictureFrame.check_and_apply_update") as mock_update, \
+         patch("pyinkdisplay.pyInkPictureFrame.checkAndApplyUpdate") as mock_update, \
          patch("pyinkdisplay.pyInkPictureFrame.continuousEpdUpdateLoop"):
 
         mock_args.return_value.config = None
@@ -194,12 +194,12 @@ def test_pyInkPictureFrame_skips_update_when_disabled_in_config():
              "epd": "waveshare_epd.epd7in3f", "url": "http://example.com",
              "alarmMinutes": 20, "noShutdown": True, "logging": None,
          }), \
-         patch("pyinkdisplay.pyInkPictureFrame.setup_logging"), \
+         patch("pyinkdisplay.pyInkPictureFrame.setupLogging"), \
          patch("pyinkdisplay.pyInkPictureFrame.PyInkDisplay"), \
          patch("pyinkdisplay.pyInkPictureFrame.fetchImageFromUrl", return_value=MagicMock()), \
          patch("pyinkdisplay.pyInkPictureFrame.PiSugarAlarm") as mock_alarm_cls, \
          patch("pyinkdisplay.pyInkPictureFrame.publishBatteryLevel"), \
-         patch("pyinkdisplay.pyInkPictureFrame.check_and_apply_update") as mock_update, \
+         patch("pyinkdisplay.pyInkPictureFrame.checkAndApplyUpdate") as mock_update, \
          patch("pyinkdisplay.pyInkPictureFrame.continuousEpdUpdateLoop"):
 
         mock_args.return_value.config = "config.yaml"
@@ -222,7 +222,7 @@ def test_pyInkPictureFrame_uses_setup_logging_from_config():
              "epd": "waveshare_epd.epd7in3f", "url": "http://example.com",
              "alarmMinutes": 20, "noShutdown": True, "logging": None,
          }), \
-         patch("pyinkdisplay.pyInkPictureFrame.setup_logging") as mock_setup_logging, \
+         patch("pyinkdisplay.pyInkPictureFrame.setupLogging") as mock_setup_logging, \
          patch("pyinkdisplay.pyInkPictureFrame.PyInkDisplay"), \
          patch("pyinkdisplay.pyInkPictureFrame.fetchImageFromUrl", return_value=MagicMock()), \
          patch("pyinkdisplay.pyInkPictureFrame.PiSugarAlarm") as mock_alarm_cls, \
@@ -246,14 +246,14 @@ def test_pyInkPictureFrame_reverts_when_force_revert_set():
              "epd": "waveshare_epd.epd7in3f", "url": "http://example.com",
              "alarmMinutes": 20, "noShutdown": True, "logging": None,
          }), \
-         patch("pyinkdisplay.pyInkPictureFrame.setup_logging"), \
+         patch("pyinkdisplay.pyInkPictureFrame.setupLogging"), \
          patch("pyinkdisplay.pyInkPictureFrame.PyInkDisplay"), \
          patch("pyinkdisplay.pyInkPictureFrame.fetchImageFromUrl", return_value=MagicMock()), \
          patch("pyinkdisplay.pyInkPictureFrame.PiSugarAlarm") as mock_alarm_cls, \
          patch("pyinkdisplay.pyInkPictureFrame.runBatteryMode"), \
-         patch("pyinkdisplay.pyInkPictureFrame.get_latest_tag", return_value="v2.0.0"), \
-         patch("pyinkdisplay.pyInkPictureFrame.apply_update") as mock_apply, \
-         patch("pyinkdisplay.pyInkPictureFrame.restart_service") as mock_restart:
+         patch("pyinkdisplay.pyInkPictureFrame.getLatestTag", return_value="v2.0.0"), \
+         patch("pyinkdisplay.pyInkPictureFrame.applyUpdate") as mock_apply, \
+         patch("pyinkdisplay.pyInkPictureFrame.restartService") as mock_restart:
 
         mock_args.return_value.config = "config.yaml"
         mock_alarm = MagicMock()
@@ -276,12 +276,12 @@ def test_pyInkPictureFrame_notifies_on_image_fetch_failure():
              "epd": "waveshare_epd.epd7in3f", "url": "http://example.com",
              "alarmMinutes": 20, "noShutdown": True, "logging": None,
          }), \
-         patch("pyinkdisplay.pyInkPictureFrame.setup_logging"), \
+         patch("pyinkdisplay.pyInkPictureFrame.setupLogging"), \
          patch("pyinkdisplay.pyInkPictureFrame.PyInkDisplay"), \
          patch("pyinkdisplay.pyInkPictureFrame.fetchImageFromUrl", return_value=None), \
          patch("pyinkdisplay.pyInkPictureFrame.PiSugarAlarm") as mock_alarm_cls, \
          patch("pyinkdisplay.pyInkPictureFrame.runBatteryMode"), \
-         patch("pyinkdisplay.pyInkPictureFrame.notify_if_configured") as mock_notify:
+         patch("pyinkdisplay.pyInkPictureFrame.notifyIfConfigured") as mock_notify:
 
         mock_args.return_value.config = "config.yaml"
         mock_alarm = MagicMock()
@@ -308,7 +308,7 @@ def test_pyInkPictureFrame_publishes_telemetry_after_display():
              "epd": "waveshare_epd.epd7in3f", "url": "http://example.com",
              "alarmMinutes": 20, "noShutdown": True, "logging": None,
          }), \
-         patch("pyinkdisplay.pyInkPictureFrame.setup_logging"), \
+         patch("pyinkdisplay.pyInkPictureFrame.setupLogging"), \
          patch("pyinkdisplay.pyInkPictureFrame.publishHaBatteryDiscovery"), \
          patch("pyinkdisplay.pyInkPictureFrame.publishHaTelemetryDiscovery"), \
          patch("pyinkdisplay.pyInkPictureFrame.PyInkDisplay"), \
@@ -320,7 +320,7 @@ def test_pyInkPictureFrame_publishes_telemetry_after_display():
         mock_args.return_value.config = "config.yaml"
         mock_alarm = MagicMock()
         mock_alarm.isSugarPowered.return_value = False
-        mock_alarm.get_battery_level.return_value = 75
+        mock_alarm.getBatteryLevel.return_value = 75
         mock_alarm_cls.return_value = mock_alarm
 
         pyInkPictureFrame()
@@ -345,7 +345,7 @@ def test_pyInkPictureFrame_notifies_when_battery_below_threshold():
              "epd": "waveshare_epd.epd7in3f", "url": "http://example.com",
              "alarmMinutes": 20, "noShutdown": True, "logging": None,
          }), \
-         patch("pyinkdisplay.pyInkPictureFrame.setup_logging"), \
+         patch("pyinkdisplay.pyInkPictureFrame.setupLogging"), \
          patch("pyinkdisplay.pyInkPictureFrame.publishHaBatteryDiscovery"), \
          patch("pyinkdisplay.pyInkPictureFrame.publishHaTelemetryDiscovery"), \
          patch("pyinkdisplay.pyInkPictureFrame.publishHaTelemetry"), \
@@ -357,13 +357,13 @@ def test_pyInkPictureFrame_notifies_when_battery_below_threshold():
          patch("pyinkdisplay.pyInkPictureFrame.PiSugarAlarm") as mock_alarm_cls, \
          patch("pyinkdisplay.pyInkPictureFrame.runBatteryMode"), \
          patch(
-             "pyinkdisplay.pyInkPictureFrame.notify_if_configured"
+             "pyinkdisplay.pyInkPictureFrame.notifyIfConfigured"
          ) as mock_notify:
 
         mock_args.return_value.config = "config.yaml"
         mock_alarm = MagicMock()
         mock_alarm.isSugarPowered.return_value = False
-        mock_alarm.get_battery_level.return_value = 15  # below threshold of 20
+        mock_alarm.getBatteryLevel.return_value = 15  # below threshold of 20
         mock_alarm_cls.return_value = mock_alarm
 
         pyInkPictureFrame()
@@ -386,7 +386,7 @@ def test_pyInkPictureFrame_notifies_when_update_applied():
              "epd": "waveshare_epd.epd7in3f", "url": "http://example.com",
              "alarmMinutes": 20, "noShutdown": True, "logging": None,
          }), \
-         patch("pyinkdisplay.pyInkPictureFrame.setup_logging"), \
+         patch("pyinkdisplay.pyInkPictureFrame.setupLogging"), \
          patch("pyinkdisplay.pyInkPictureFrame.publishHaTelemetry"), \
          patch("pyinkdisplay.pyInkPictureFrame.publishHaBatteryDiscovery"), \
          patch("pyinkdisplay.pyInkPictureFrame.publishHaTelemetryDiscovery"), \
@@ -397,17 +397,17 @@ def test_pyInkPictureFrame_notifies_when_update_applied():
          ), \
          patch("pyinkdisplay.pyInkPictureFrame.PiSugarAlarm") as mock_alarm_cls, \
          patch(
-             "pyinkdisplay.pyInkPictureFrame.check_and_apply_update",
+             "pyinkdisplay.pyInkPictureFrame.checkAndApplyUpdate",
              return_value=True,
          ), \
          patch(
-             "pyinkdisplay.pyInkPictureFrame.notify_if_configured"
+             "pyinkdisplay.pyInkPictureFrame.notifyIfConfigured"
          ) as mock_notify:
 
         mock_args.return_value.config = "config.yaml"
         mock_alarm = MagicMock()
         mock_alarm.isSugarPowered.return_value = True
-        mock_alarm.get_battery_level.return_value = 90
+        mock_alarm.getBatteryLevel.return_value = 90
         mock_alarm_cls.return_value = mock_alarm
 
         pyInkPictureFrame()
