@@ -30,7 +30,7 @@ import logging
 from datetime import datetime
 from typing import Optional
 
-import requests
+import requests  # type: ignore[import-untyped]
 from PIL import Image  # type: ignore
 
 from .pyUtils import fetchImageFromUrl

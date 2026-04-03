@@ -30,7 +30,7 @@ Sends push notifications to a local Apprise container for key events
 import logging
 from typing import Optional
 
-import requests
+import requests  # type: ignore[import-untyped]
 
 logger = logging.getLogger(__name__)
 

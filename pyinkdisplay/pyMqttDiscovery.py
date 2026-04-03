@@ -69,7 +69,7 @@ def publishHaBatteryDiscovery(mqtt_config):
 
 STATE_TOPIC = "homeassistant/sensor/pyinkdisplay/state"
 
-_TELEMETRY_SENSORS = [
+_TELEMETRY_SENSORS: list[dict[str, object]] = [
     {
         "field": "battery_level",
         "name": "pyInkDisplay Battery Level",
