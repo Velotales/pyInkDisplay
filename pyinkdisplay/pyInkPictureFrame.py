@@ -342,7 +342,9 @@ def pyInkPictureFrame():
         displayManager = PyInkDisplay(epd_type=merged["epd"])
         logging.info("Attempting to fetch image from URL: %s", merged["url"])
         image = fetchImageFromUrl(merged["url"])
+        imageFetchStatus = "success"
         if image is None:
+            imageFetchStatus = "failure"
             logging.warning("Image fetch returned None — using fallback.")
             notifyIfConfigured(
                 appriseConfig,
@@ -350,15 +352,13 @@ def pyInkPictureFrame():
                 f"Failed to fetch image from {merged['url']}",
             )
             image = fetchFallbackImage(fallback_file=fallbackFile, iotd_config=iotdConfig)
-        logging.info(
-            "Image fetched successfully. Displaying on EPD."
-        )
+            logging.info("Fallback image ready. Displaying on EPD.")
+        else:
+            logging.info("Image fetched successfully. Displaying on EPD.")
         displayManager.displayImage(image)
         logging.info("Image displayed on EPD.")
 
         alarmManager = PiSugarAlarm()
-
-        imageFetchStatus = "success" if image is not None else "failure"
         powerMode = "usb" if alarmManager.isSugarPowered() else "battery"
 
         try:
