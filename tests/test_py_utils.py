@@ -56,19 +56,22 @@ def test_fetchImageFromUrl_success():
 
 
 def test_fetchImageFromUrl_failure():
-    """Test failure in image download, returns default image."""
-    with patch("pyinkdisplay.pyUtils.requests.get") as mock_get, patch(
-        "pyinkdisplay.pyUtils._createDefaultImage"
-    ) as mock_default:
-        mock_get.side_effect = Exception("Network error")
-
-        mock_default_image = MagicMock()
-        mock_default.return_value = mock_default_image
-
+    """Returns None when the HTTP request fails after retries."""
+    import requests as req
+    with patch("pyinkdisplay.pyUtils._fetchImageAttempt",
+               side_effect=req.exceptions.ConnectionError("refused")):
         result = utils.fetchImageFromUrl("http://example.com/image.jpg")
+    assert result is None
 
-        assert result == mock_default_image
-        mock_default.assert_called_once()
+
+def test_fetchImageFromUrl_retries_on_request_error():
+    """requests.get is called up to 3 times on RequestException."""
+    import requests as req
+    with patch("pyinkdisplay.pyUtils.requests.get",
+               side_effect=req.exceptions.ConnectionError("refused")) as mock_get:
+        result = utils.fetchImageFromUrl("http://example.com/image.jpg")
+    assert result is None
+    assert mock_get.call_count == 3
 
 
 def test_createDefaultImage():

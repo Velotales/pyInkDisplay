@@ -59,36 +59,23 @@ def _createDefaultImage(width: int = 800, height: int = 480) -> Image.Image:
 
 
 @tenacity.retry(
-    stop=tenacity.stop_after_attempt(3),  # Retry up to 3 times
-    wait=tenacity.wait_exponential(multiplier=1, min=1, max=10),  # Exponential backoff
-    retry=tenacity.retry_if_exception_type(
-        (requests.exceptions.RequestException, Exception)
-    ),
-    reraise=True,  # Re-raise after retries
+    stop=tenacity.stop_after_attempt(3),
+    wait=tenacity.wait_exponential(multiplier=1, min=1, max=10),
+    retry=tenacity.retry_if_exception_type(requests.exceptions.RequestException),
 )
+def _fetchImageAttempt(url: str) -> Image.Image:
+    """Single attempt to fetch an image. Raises on failure so tenacity can retry."""
+    response = requests.get(url, timeout=10)
+    response.raise_for_status()
+    return Image.open(BytesIO(response.content))
+
+
 def fetchImageFromUrl(url: str) -> Optional[Image.Image]:
-    """
-    Downloads an image from a URL and returns it as a PIL Image object.
-    Includes retries for network requests and fallback to a default image on failure.
-
-    Args:
-        url (str): The URL to fetch the image from.
-
-    Returns:
-        PIL.Image.Image: The downloaded image as a PIL Image object,
-        or a default fallback image on error.
-    """
+    """Fetch an image from a URL with up to 3 retries. Returns None on failure."""
     try:
-        response = requests.get(url, timeout=10)
-        response.raise_for_status()
-        image = Image.open(BytesIO(response.content))
-        logger.info("PIL Image object created from URL.")
+        image = _fetchImageAttempt(url)
+        logger.info("Image fetched from %s", url)
         return image
-    except requests.exceptions.RequestException as e:
-        logger.error("Error fetching image from %s: %s", url, e)
-        logger.info("Returning default fallback image due to fetch failure.")
-        return _createDefaultImage()
     except Exception as e:
-        logger.error("An unexpected error occurred: %s", e)
-        logger.info("Returning default fallback image due to an unexpected error.")
-        return _createDefaultImage()
+        logger.error("Failed to fetch image from %s after retries: %s", url, e)
+        return None
