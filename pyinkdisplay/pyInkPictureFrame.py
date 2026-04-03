@@ -35,12 +35,14 @@ from datetime import datetime, timezone
 import paho.mqtt.client as mqtt
 import yaml  # type: ignore[import-untyped]
 
+from .pyInkDisplay import EPDNotFoundError, PyInkDisplay
+from .pyLoggingConfig import setupLogging
 from .pyMqttDiscovery import (
     publishHaBatteryDiscovery,
     publishHaTelemetry,
     publishHaTelemetryDiscovery,
 )
-from .pyInkDisplay import EPDNotFoundError, PyInkDisplay
+from .pyNotifications import notifyIfConfigured
 from .pySugarAlarm import PiSugarAlarm
 from .pyUpdater import (
     applyUpdate,
@@ -49,8 +51,6 @@ from .pyUpdater import (
     getLatestTag,
     restartService,
 )
-from .pyLoggingConfig import setupLogging
-from .pyNotifications import notifyIfConfigured
 from .pyUtils import fetchFallbackImage, fetchImageFromUrl
 
 # Global variables for signal handler access

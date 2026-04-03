@@ -3,7 +3,6 @@ from unittest.mock import MagicMock, patch
 
 from pyinkdisplay.pyMqttDiscovery import publishHaTelemetry, publishHaTelemetryDiscovery
 
-
 MQTT_CONFIG = {"host": "localhost", "port": 1883}
 
 
