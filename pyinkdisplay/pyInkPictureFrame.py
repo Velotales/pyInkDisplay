@@ -201,7 +201,11 @@ def runBatteryMode(alarmManager, alarmMinutes, mqttConfig, noShutdown):
         noShutdown (bool): If True, skip the shutdown command (for testing).
     """
     secondsInFuture = alarmMinutes * 60
-    logging.info("Battery mode: setting alarm for %d minutes (%d seconds).", alarmMinutes, secondsInFuture)
+    logging.info(
+        "Battery mode: setting alarm for %d minutes (%d seconds).",
+        alarmMinutes,
+        secondsInFuture,
+    )
     alarmManager.setAlarm(secondsInFuture=secondsInFuture)
     publishBatteryLevel(alarmManager, mqttConfig)
 

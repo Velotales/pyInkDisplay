@@ -96,7 +96,6 @@ def test_setupLogging():
 def test_runBatteryMode_sets_alarm_and_shuts_down():
     """Battery mode sets alarm, publishes battery, and shuts down."""
     alarm = MagicMock()
-    alarm.get_battery_level.return_value = 75
 
     with patch("pyinkdisplay.pyInkPictureFrame.subprocess.run") as mock_run, \
          patch("pyinkdisplay.pyInkPictureFrame.publishBatteryLevel") as mock_pub:
