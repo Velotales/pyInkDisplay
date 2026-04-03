@@ -107,7 +107,7 @@ jobs:
   tests-arm:
     name: "Tests: Raspberry Pi (optional)"
     needs: compile
-    if: github.event_name != 'pull_request'
+    if: vars.ARM_RUNNER_ENABLED == 'true'
     continue-on-error: true
     timeout-minutes: 10
     runs-on: [self-hosted, linux, arm]
