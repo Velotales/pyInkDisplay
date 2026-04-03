@@ -387,6 +387,16 @@ def pyInkPictureFrame():
         if mqttConfig:
             publishHaTelemetry(mqttConfig, telemetry)
 
+        batteryThreshold = (
+            appriseConfig.get("battery_alert_threshold", 0) if appriseConfig else 0
+        )
+        if batteryLevel is not None and batteryThreshold and batteryLevel < batteryThreshold:
+            notify_if_configured(
+                appriseConfig,
+                "pyInkDisplay: Low Battery",
+                f"Battery level is {batteryLevel}% (threshold: {batteryThreshold}%)",
+            )
+
         if alarmManager.isSugarPowered():
             logging.info("PiSugar is powered. Entering continuous update loop.")
             # force_revert intentionally bypasses the is_dev_mode() check in
@@ -407,7 +417,11 @@ def pyInkPictureFrame():
                 logging.info("Checking for updates...")
                 updated = check_and_apply_update()
                 if updated:
-                    # Service is restarting — exit cleanly
+                    notify_if_configured(
+                        appriseConfig,
+                        "pyInkDisplay: Update Applied",
+                        "Updated to latest release. Service is restarting.",
+                    )
                     logging.info("Update applied. Service is restarting.")
                     return
             else:

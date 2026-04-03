@@ -338,3 +338,88 @@ def test_pyInkPictureFrame_publishes_telemetry_after_display():
     assert "image_fetch_status" in telemetry_arg
     assert "power_mode" in telemetry_arg
     assert "software_version" in telemetry_arg
+
+
+def test_pyInkPictureFrame_notifies_when_battery_below_threshold():
+    """Sends Apprise notification when battery level is below configured threshold."""
+    with patch("pyinkdisplay.pyInkPictureFrame.parseArguments") as mock_args, \
+         patch("pyinkdisplay.pyInkPictureFrame.loadConfig", return_value={
+             "mqtt": {"host": "localhost"},
+             "apprise": {"url": "http://apprise.local", "battery_alert_threshold": 20},
+         }), \
+         patch("pyinkdisplay.pyInkPictureFrame.mergeArgsAndConfig", return_value={
+             "epd": "waveshare_epd.epd7in3f", "url": "http://example.com",
+             "alarmMinutes": 20, "noShutdown": True, "logging": None,
+         }), \
+         patch("pyinkdisplay.pyInkPictureFrame.setup_logging"), \
+         patch("pyinkdisplay.pyInkPictureFrame.publishHaBatteryDiscovery"), \
+         patch("pyinkdisplay.pyInkPictureFrame.publishHaTelemetryDiscovery"), \
+         patch("pyinkdisplay.pyInkPictureFrame.publishHaTelemetry"), \
+         patch("pyinkdisplay.pyInkPictureFrame.PyInkDisplay"), \
+         patch(
+             "pyinkdisplay.pyInkPictureFrame.fetchImageFromUrl",
+             return_value=MagicMock(),
+         ), \
+         patch("pyinkdisplay.pyInkPictureFrame.PiSugarAlarm") as mock_alarm_cls, \
+         patch("pyinkdisplay.pyInkPictureFrame.runBatteryMode"), \
+         patch(
+             "pyinkdisplay.pyInkPictureFrame.notify_if_configured"
+         ) as mock_notify:
+
+        mock_args.return_value.config = "config.yaml"
+        mock_alarm = MagicMock()
+        mock_alarm.isSugarPowered.return_value = False
+        mock_alarm.get_battery_level.return_value = 15  # below threshold of 20
+        mock_alarm_cls.return_value = mock_alarm
+
+        pyInkPictureFrame()
+
+    mock_notify.assert_any_call(
+        {"url": "http://apprise.local", "battery_alert_threshold": 20},
+        "pyInkDisplay: Low Battery",
+        "Battery level is 15% (threshold: 20%)",
+    )
+
+
+def test_pyInkPictureFrame_notifies_when_update_applied():
+    """Sends Apprise notification when check_and_apply_update returns True."""
+    with patch("pyinkdisplay.pyInkPictureFrame.parseArguments") as mock_args, \
+         patch("pyinkdisplay.pyInkPictureFrame.loadConfig", return_value={
+             "apprise": {"url": "http://apprise.local"},
+             "updater": {"enabled": True},
+         }), \
+         patch("pyinkdisplay.pyInkPictureFrame.mergeArgsAndConfig", return_value={
+             "epd": "waveshare_epd.epd7in3f", "url": "http://example.com",
+             "alarmMinutes": 20, "noShutdown": True, "logging": None,
+         }), \
+         patch("pyinkdisplay.pyInkPictureFrame.setup_logging"), \
+         patch("pyinkdisplay.pyInkPictureFrame.publishHaTelemetry"), \
+         patch("pyinkdisplay.pyInkPictureFrame.publishHaBatteryDiscovery"), \
+         patch("pyinkdisplay.pyInkPictureFrame.publishHaTelemetryDiscovery"), \
+         patch("pyinkdisplay.pyInkPictureFrame.PyInkDisplay"), \
+         patch(
+             "pyinkdisplay.pyInkPictureFrame.fetchImageFromUrl",
+             return_value=MagicMock(),
+         ), \
+         patch("pyinkdisplay.pyInkPictureFrame.PiSugarAlarm") as mock_alarm_cls, \
+         patch(
+             "pyinkdisplay.pyInkPictureFrame.check_and_apply_update",
+             return_value=True,
+         ), \
+         patch(
+             "pyinkdisplay.pyInkPictureFrame.notify_if_configured"
+         ) as mock_notify:
+
+        mock_args.return_value.config = "config.yaml"
+        mock_alarm = MagicMock()
+        mock_alarm.isSugarPowered.return_value = True
+        mock_alarm.get_battery_level.return_value = 90
+        mock_alarm_cls.return_value = mock_alarm
+
+        pyInkPictureFrame()
+
+    mock_notify.assert_any_call(
+        {"url": "http://apprise.local"},
+        "pyInkDisplay: Update Applied",
+        "Updated to latest release. Service is restarting.",
+    )
