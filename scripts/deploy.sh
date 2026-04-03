@@ -41,7 +41,7 @@ echo "Writing dev mode marker on $TARGET ..."
 ssh "$TARGET" "touch $MARKER_PATH"
 
 echo "Setting up venv on $TARGET ..."
-ssh "$TARGET" "cd $REMOTE_DIR && python3 -m venv .venv && .venv/bin/pip install -q -r requirements.in"
+ssh "$TARGET" "cd $REMOTE_DIR && python3 -m venv .venv && .venv/bin/pip install -r requirements.in"
 
 echo "Stopping $SERVICE_NAME on $TARGET ..."
 ssh "$TARGET" "sudo systemctl stop $SERVICE_NAME"
