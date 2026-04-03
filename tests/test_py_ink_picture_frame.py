@@ -25,12 +25,13 @@ SOFTWARE.
 Unit tests for pyInkPictureFrame.py
 """
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, call, patch
 
 from pyinkdisplay.pyInkPictureFrame import (
     loadConfig,
     mergeArgsAndConfig,
     parseArguments,
+    runBatteryMode,
     setupLogging,
 )
 
@@ -90,3 +91,28 @@ def test_setupLogging():
         setupLogging({"level": "INFO"})
 
         mock_basic_config.assert_called_once()
+
+
+def test_runBatteryMode_sets_alarm_and_shuts_down():
+    """Battery mode sets alarm, publishes battery, and shuts down."""
+    alarm = MagicMock()
+    alarm.get_battery_level.return_value = 75
+
+    with patch("pyinkdisplay.pyInkPictureFrame.subprocess.run") as mock_run, \
+         patch("pyinkdisplay.pyInkPictureFrame.publishBatteryLevel") as mock_pub:
+        runBatteryMode(alarm, alarmMinutes=20, mqttConfig={"host": "localhost"}, noShutdown=False)
+
+    alarm.setAlarm.assert_called_once_with(secondsInFuture=1200)
+    mock_pub.assert_called_once_with(alarm, {"host": "localhost"})
+    mock_run.assert_called_once_with(["sudo", "shutdown", "now"], check=True)
+
+
+def test_runBatteryMode_no_shutdown_when_flag_set():
+    """Battery mode skips shutdown when noShutdown=True."""
+    alarm = MagicMock()
+
+    with patch("pyinkdisplay.pyInkPictureFrame.subprocess.run") as mock_run, \
+         patch("pyinkdisplay.pyInkPictureFrame.publishBatteryLevel"):
+        runBatteryMode(alarm, alarmMinutes=20, mqttConfig=None, noShutdown=True)
+
+    mock_run.assert_not_called()

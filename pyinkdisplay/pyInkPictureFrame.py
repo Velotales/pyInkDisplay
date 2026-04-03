@@ -190,6 +190,31 @@ def publishBatteryLevel(alarmManager, mqttConfig):
         logging.error("Failed to publish battery level to MQTT: %s", e)
 
 
+def runBatteryMode(alarmManager, alarmMinutes, mqttConfig, noShutdown):
+    """
+    One-shot battery cycle: set alarm, publish battery level, shut down immediately.
+
+    Args:
+        alarmManager: PiSugarAlarm instance.
+        alarmMinutes (int): Minutes until next RTC wake alarm.
+        mqttConfig (dict or None): MQTT configuration dict.
+        noShutdown (bool): If True, skip the shutdown command (for testing).
+    """
+    secondsInFuture = alarmMinutes * 60
+    logging.info("Battery mode: setting alarm for %d minutes (%d seconds).", alarmMinutes, secondsInFuture)
+    alarmManager.setAlarm(secondsInFuture=secondsInFuture)
+    publishBatteryLevel(alarmManager, mqttConfig)
+
+    if not noShutdown:
+        logging.info("Battery mode complete. Shutting down now.")
+        try:
+            subprocess.run(["sudo", "shutdown", "now"], check=True)
+        except Exception as e:
+            logging.error("Error during shutdown: %s", e)
+    else:
+        logging.info("Skipping shutdown due to --noShutdown flag.")
+
+
 def continuousEpdUpdateLoop(
     displayManager, alarmManager, imageUrl, alarmMinutes, mqttConfig=None
 ):
@@ -360,7 +385,7 @@ def pyInkPictureFrame():
             logging.info("EPD display closed.")
 
 
-__all__ = ["pyInkPictureFrame"]
+__all__ = ["pyInkPictureFrame", "runBatteryMode"]
 
 if __name__ == "__main__":
     pyInkPictureFrame()
