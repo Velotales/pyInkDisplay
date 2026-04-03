@@ -30,14 +30,25 @@ import signal
 import subprocess
 import sys
 import time
+from datetime import datetime, timezone
 
 import paho.mqtt.client as mqtt
 import yaml  # type: ignore[import-untyped]
 
-from .mqttDiscovery import publishHaBatteryDiscovery
+from .mqttDiscovery import (
+    publishHaBatteryDiscovery,
+    publishHaTelemetry,
+    publishHaTelemetryDiscovery,
+)
 from .pyInkDisplay import EPDNotFoundError, PyInkDisplay
 from .pySugarAlarm import PiSugarAlarm
-from .updater import apply_update, check_and_apply_update, get_latest_tag, restart_service
+from .updater import (
+    apply_update,
+    check_and_apply_update,
+    get_current_tag,
+    get_latest_tag,
+    restart_service,
+)
 from .logging_config import setup_logging
 from .notifications import notify_if_configured
 from .utils import fetchImageFromUrl
@@ -327,6 +338,7 @@ def pyInkPictureFrame():
     # Publish Home Assistant MQTT discovery if MQTT is configured
     if mqttConfig:
         publishHaBatteryDiscovery(mqttConfig)
+        publishHaTelemetryDiscovery(mqttConfig)
 
     if not merged.get("epd"):
         logging.error("EPD type must be specified via --epd or in the config file.")
@@ -355,9 +367,28 @@ def pyInkPictureFrame():
 
         alarmManager = PiSugarAlarm()
 
+        imageFetchStatus = "success" if image is not None else "failure"
+        powerMode = "usb" if alarmManager.isSugarPowered() else "battery"
+
+        try:
+            batteryLevel = alarmManager.get_battery_level()
+        except Exception:
+            batteryLevel = None
+
+        telemetry = {
+            "battery_level": batteryLevel,
+            "last_update_time": datetime.now(timezone.utc).isoformat(),
+            "image_fetch_status": imageFetchStatus,
+            "power_mode": powerMode,
+            "software_version": get_current_tag() or "unknown",
+            "update_available": False,
+        }
+
+        if mqttConfig:
+            publishHaTelemetry(mqttConfig, telemetry)
+
         if alarmManager.isSugarPowered():
-            logging.info("PiSugar is powered. Publishing battery level.")
-            publishBatteryLevel(alarmManager, mqttConfig)
+            logging.info("PiSugar is powered. Entering continuous update loop.")
             # force_revert intentionally bypasses the is_dev_mode() check in
             # check_and_apply_update — it is designed to escape dev mode
             if forceRevert:

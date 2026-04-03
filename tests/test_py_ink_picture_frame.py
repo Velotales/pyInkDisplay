@@ -304,3 +304,37 @@ def test_pyInkPictureFrame_notifies_on_image_fetch_failure():
         "pyInkDisplay: Image Fetch Failed",
         "Failed to fetch image from http://example.com",
     )
+
+
+def test_pyInkPictureFrame_publishes_telemetry_after_display():
+    """publishHaTelemetry is called with the correct fields after display."""
+    with patch("pyinkdisplay.pyInkPictureFrame.parseArguments") as mock_args, \
+         patch("pyinkdisplay.pyInkPictureFrame.loadConfig", return_value={"mqtt": {"host": "localhost"}}), \
+         patch("pyinkdisplay.pyInkPictureFrame.mergeArgsAndConfig", return_value={
+             "epd": "waveshare_epd.epd7in3f", "url": "http://example.com",
+             "alarmMinutes": 20, "noShutdown": True, "logging": None,
+         }), \
+         patch("pyinkdisplay.pyInkPictureFrame.setup_logging"), \
+         patch("pyinkdisplay.pyInkPictureFrame.publishHaBatteryDiscovery"), \
+         patch("pyinkdisplay.pyInkPictureFrame.publishHaTelemetryDiscovery"), \
+         patch("pyinkdisplay.pyInkPictureFrame.PyInkDisplay"), \
+         patch("pyinkdisplay.pyInkPictureFrame.fetchImageFromUrl", return_value=MagicMock()), \
+         patch("pyinkdisplay.pyInkPictureFrame.PiSugarAlarm") as mock_alarm_cls, \
+         patch("pyinkdisplay.pyInkPictureFrame.runBatteryMode"), \
+         patch("pyinkdisplay.pyInkPictureFrame.publishHaTelemetry") as mock_telemetry:
+
+        mock_args.return_value.config = "config.yaml"
+        mock_alarm = MagicMock()
+        mock_alarm.isSugarPowered.return_value = False
+        mock_alarm.get_battery_level.return_value = 75
+        mock_alarm_cls.return_value = mock_alarm
+
+        pyInkPictureFrame()
+
+    mock_telemetry.assert_called_once()
+    telemetry_arg = mock_telemetry.call_args[0][1]
+    assert "battery_level" in telemetry_arg
+    assert "last_update_time" in telemetry_arg
+    assert "image_fetch_status" in telemetry_arg
+    assert "power_mode" in telemetry_arg
+    assert "software_version" in telemetry_arg
