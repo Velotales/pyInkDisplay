@@ -319,8 +319,8 @@ def pyInkPictureFrame():
     updaterEnabled = updaterConfig.get("enabled", True)
     forceRevert = updaterConfig.get("force_revert", False)
     appriseConfig = config.get("apprise") if config else None
-    fallbackFile = merged.get("fallback_file")
-    iotdConfig = merged.get("image_of_the_day")
+    fallbackFile = config.get("fallback_file") if config else None
+    iotdConfig = config.get("image_of_the_day") if config else None
 
     loggingConfig = config.get("logging", {}) if config else {}
     setupLogging(loggingConfig)
