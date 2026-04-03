@@ -7,19 +7,21 @@
 #
 # Usage: ./scripts/deploy.sh pi@raspberrypi.local
 #        ./scripts/deploy.sh pi@192.168.1.100
+#        ./scripts/deploy.sh pi@raspberrypi.local /home/pi/pyInkDisplay config/config_dev.yaml
 #
 # Default remote directory: /home/pi/pyInkDisplay
-# Override with a second argument: ./deploy.sh pi@host /home/myuser/pyInkDisplay
+# Default config file:      config/config.yaml
 
 set -euo pipefail
 
 TARGET="${1:-}"
 if [[ -z "$TARGET" ]]; then
-    echo "Usage: $0 <user@host> [remote-dir]"
+    echo "Usage: $0 <user@host> [remote-dir] [config-file]"
     exit 1
 fi
 
 REMOTE_DIR="${2:-/home/pi/pyInkDisplay}"
+CONFIG_FILE="${3:-config/config.yaml}"
 MARKER_PATH="/tmp/pyinkdisplay_dev_mode"
 SERVICE_NAME="pyInkDisplay.service"
 
@@ -42,7 +44,7 @@ echo "Stopping $SERVICE_NAME on $TARGET ..."
 ssh "$TARGET" "sudo systemctl stop $SERVICE_NAME"
 
 echo "Deploy complete. Running directly (Ctrl+C to stop) ..."
-ssh "$TARGET" "cd $REMOTE_DIR && python3 -m pyinkdisplay -c config/config.yaml"
+ssh "$TARGET" "cd $REMOTE_DIR && python3 -m pyinkdisplay -c $CONFIG_FILE"
 
 echo ""
 echo "Run ./scripts/revert.sh $TARGET to restore the latest release and restart the service."

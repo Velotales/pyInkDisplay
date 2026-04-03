@@ -64,15 +64,19 @@ Development currently happens directly on the Pi. There is no workflow for devel
 
 ### Dev Testing Workflow
 
-A `scripts/deploy.sh` script rsyncs the working directory from the developer's laptop to the Pi over SSH, then restarts the systemd service.
+A `scripts/deploy.sh` script rsyncs the working directory from the developer's laptop to the Pi over SSH, stops the systemd service, and runs `pyinkdisplay` directly so that console output streams back to the terminal. Press Ctrl+C to stop.
 
 ```bash
 ./scripts/deploy.sh pi@raspberrypi.local
+./scripts/deploy.sh pi@raspberrypi.local /home/pi/pyInkDisplay config/config_dev.yaml
 ```
 
 - Excludes `.git`, `__pycache__`, `.venv`, `*.pyc`
 - Writes a `dev_mode` marker file to the Pi after sync
 - While `dev_mode` is present, auto-update is skipped (to avoid overwriting test code)
+- Stops the systemd service and runs `python3 -m pyinkdisplay -c <config>` directly — output is visible in the terminal
+- Defaults to `config/config.yaml`; pass a third argument to use a custom config file
+- Remote directory defaults to `/home/pi/pyInkDisplay`; pass a second argument to override
 
 ### Production Self-Update (USB power only)
 

@@ -338,20 +338,29 @@ Create `scripts/deploy.sh`:
 
 ```bash
 #!/usr/bin/env bash
-# deploy.sh — Rsync the working directory to a Raspberry Pi and restart the service.
+# deploy.sh — Rsync the working directory to a Raspberry Pi and run it directly.
+#
+# Stops the systemd service and runs pyinkdisplay directly via SSH so that
+# console output streams back to your terminal. Press Ctrl+C to stop.
+# Run ./scripts/revert.sh to restore the service-managed production setup.
 #
 # Usage: ./scripts/deploy.sh pi@raspberrypi.local
 #        ./scripts/deploy.sh pi@192.168.1.100
+#        ./scripts/deploy.sh pi@raspberrypi.local /home/pi/pyInkDisplay config/config_dev.yaml
+#
+# Default remote directory: /home/pi/pyInkDisplay
+# Default config file:      config/config.yaml
 
 set -euo pipefail
 
 TARGET="${1:-}"
 if [[ -z "$TARGET" ]]; then
-    echo "Usage: $0 <user@host>"
+    echo "Usage: $0 <user@host> [remote-dir] [config-file]"
     exit 1
 fi
 
-REMOTE_DIR="/home/pi/pyInkDisplay"
+REMOTE_DIR="${2:-/home/pi/pyInkDisplay}"
+CONFIG_FILE="${3:-config/config.yaml}"
 MARKER_PATH="/tmp/pyinkdisplay_dev_mode"
 SERVICE_NAME="pyInkDisplay.service"
 
@@ -370,11 +379,14 @@ rsync -avz --delete \
 echo "Writing dev mode marker on $TARGET ..."
 ssh "$TARGET" "touch $MARKER_PATH"
 
-echo "Restarting $SERVICE_NAME on $TARGET ..."
-ssh "$TARGET" "sudo systemctl restart $SERVICE_NAME"
+echo "Stopping $SERVICE_NAME on $TARGET ..."
+ssh "$TARGET" "sudo systemctl stop $SERVICE_NAME"
 
-echo "Deploy complete. Dev mode is active — auto-update is suppressed."
-echo "Run ./scripts/revert.sh $TARGET to restore the latest release."
+echo "Deploy complete. Running directly (Ctrl+C to stop) ..."
+ssh "$TARGET" "cd $REMOTE_DIR && python3 -m pyinkdisplay -c $CONFIG_FILE"
+
+echo ""
+echo "Run ./scripts/revert.sh $TARGET to restore the latest release and restart the service."
 ```
 
 - [ ] **Step 2: Make executable**
@@ -395,7 +407,7 @@ Expected: `Syntax OK`
 
 ```bash
 git add scripts/deploy.sh
-git commit -m "feat: add deploy.sh for rsync-based Pi deployment"
+git commit -m "feat: add deploy.sh for rsync-based Pi deployment with direct execution"
 ```
 
 ---
