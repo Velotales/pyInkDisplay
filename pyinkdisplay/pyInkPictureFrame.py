@@ -215,6 +215,7 @@ def runBatteryMode(alarmManager, alarmMinutes, mqttConfig, noShutdown):
             subprocess.run(["sudo", "shutdown", "now"], check=True)
         except Exception as e:
             logging.error("Error during shutdown: %s", e)
+            # Shutdown failed; process continues running — device stays alive
     else:
         logging.info("Skipping shutdown due to --noShutdown flag.")
 

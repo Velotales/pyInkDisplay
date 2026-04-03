@@ -25,7 +25,7 @@ SOFTWARE.
 Unit tests for pyInkPictureFrame.py
 """
 
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import MagicMock, patch
 
 from pyinkdisplay.pyInkPictureFrame import (
     loadConfig,
@@ -140,7 +140,7 @@ def test_pyInkPictureFrame_calls_runBatteryMode_when_not_powered():
 
         pyInkPictureFrame()
 
-    mock_battery.assert_called_once()
+    mock_battery.assert_called_once_with(mock_alarm, 20, None, True)
     mock_usb.assert_not_called()
 
 
