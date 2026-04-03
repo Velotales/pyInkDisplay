@@ -46,6 +46,62 @@ def get_latest_tag() -> Optional[str]:
         return None
 
 
-def is_dev_mode(marker_path: Path = DEV_MODE_MARKER) -> bool:
+def is_dev_mode(marker_path: Optional[Path] = None) -> bool:
     """Return True if the dev mode marker file is present."""
+    if marker_path is None:
+        marker_path = DEV_MODE_MARKER
     return marker_path.exists()
+
+
+def apply_update(latest_tag: str) -> bool:
+    """Checkout the given tag. Returns True on success, False on failure."""
+    try:
+        subprocess.run(
+            ["git", "checkout", latest_tag], capture_output=True, check=True
+        )
+        logger.info("Checked out tag %s successfully.", latest_tag)
+        return True
+    except subprocess.CalledProcessError as e:
+        logger.error("Failed to checkout tag %s: %s", latest_tag, e)
+        return False
+
+
+def restart_service(service_name: str = "pyInkDisplay.service") -> None:
+    """Restart the named systemd service via sudo systemctl."""
+    try:
+        subprocess.run(["sudo", "systemctl", "restart", service_name], check=True)
+        logger.info("Service %s restarted.", service_name)
+    except subprocess.CalledProcessError as e:
+        logger.error("Failed to restart service %s: %s", service_name, e)
+
+
+def check_and_apply_update() -> bool:
+    """
+    Check for a newer release tag and apply it if available.
+
+    Skips entirely when the dev mode marker file is present.
+    Returns True if an update was applied (and the service is restarting).
+    """
+    if is_dev_mode():
+        logger.info("Dev mode active — skipping update check.")
+        return False
+
+    current = get_current_tag()
+    latest = get_latest_tag()
+
+    if not latest:
+        logger.warning("Could not determine latest tag — skipping update.")
+        return False
+
+    if current == latest:
+        logger.info("Already on latest tag %s — no update needed.", current)
+        return False
+
+    logger.info(
+        "New release available: %s (current: %s). Applying update.", latest, current
+    )
+    if apply_update(latest):
+        restart_service()
+        return True
+
+    return False
