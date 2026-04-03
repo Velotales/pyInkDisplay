@@ -168,3 +168,30 @@ def test_pyInkPictureFrame_calls_continuousLoop_when_powered():
 
     mock_usb.assert_called_once()
     mock_battery.assert_not_called()
+
+
+def test_pyInkPictureFrame_checks_for_update_when_usb_powered():
+    """When on USB power, check_and_apply_update is called before the continuous loop."""
+    with patch("pyinkdisplay.pyInkPictureFrame.parseArguments") as mock_args, \
+         patch("pyinkdisplay.pyInkPictureFrame.loadConfig", return_value={}), \
+         patch("pyinkdisplay.pyInkPictureFrame.mergeArgsAndConfig", return_value={
+             "epd": "waveshare_epd.epd7in3f", "url": "http://example.com",
+             "alarmMinutes": 20, "noShutdown": True, "logging": None,
+         }), \
+         patch("pyinkdisplay.pyInkPictureFrame.setupLogging"), \
+         patch("pyinkdisplay.pyInkPictureFrame.PyInkDisplay"), \
+         patch("pyinkdisplay.pyInkPictureFrame.fetchImageFromUrl", return_value=MagicMock()), \
+         patch("pyinkdisplay.pyInkPictureFrame.PiSugarAlarm") as mock_alarm_cls, \
+         patch("pyinkdisplay.pyInkPictureFrame.publishBatteryLevel"), \
+         patch("pyinkdisplay.pyInkPictureFrame.check_and_apply_update") as mock_update, \
+         patch("pyinkdisplay.pyInkPictureFrame.continuousEpdUpdateLoop"):
+
+        mock_args.return_value.config = None
+        mock_alarm = MagicMock()
+        mock_alarm.isSugarPowered.return_value = True
+        mock_alarm_cls.return_value = mock_alarm
+        mock_update.return_value = False  # no update, continue to loop
+
+        pyInkPictureFrame()
+
+    mock_update.assert_called_once()

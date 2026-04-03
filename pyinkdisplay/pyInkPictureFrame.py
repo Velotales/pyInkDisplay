@@ -37,6 +37,7 @@ import yaml  # type: ignore[import-untyped]
 from .mqttDiscovery import publishHaBatteryDiscovery
 from .pyInkDisplay import EPDNotFoundError, PyInkDisplay
 from .pySugarAlarm import PiSugarAlarm
+from .updater import check_and_apply_update
 from .utils import fetchImageFromUrl
 
 # Global variables for signal handler access
@@ -343,10 +344,14 @@ def pyInkPictureFrame():
         alarmManager = PiSugarAlarm()
 
         if alarmManager.isSugarPowered():
-            logging.info(
-                "PiSugar is powered. Publishing battery level and entering continuous update mode."
-            )
+            logging.info("PiSugar is powered. Publishing battery level.")
             publishBatteryLevel(alarmManager, mqttConfig)
+            logging.info("Checking for updates...")
+            updated = check_and_apply_update()
+            if updated:
+                # Service is restarting — exit cleanly
+                logging.info("Update applied. Service is restarting.")
+                return
             continuousEpdUpdateLoop(
                 displayManager,
                 alarmManager,
