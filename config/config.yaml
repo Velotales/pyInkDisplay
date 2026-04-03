@@ -4,6 +4,10 @@
 
 epd: "waveshare_epd.epd7in3f"
 url: "http://x.x.x.x"
+fallback_file: null          # Optional path to an image on disk
+image_of_the_day:
+  provider: null             # inaturalist | nasa_apod | null (disabled)
+  nasa_apod_key: "DEMO_KEY"  # Only used when provider is nasa_apod
 alarmMinutes: 2
 noShutdown: false
 # MQTT configuration for Home Assistant integration

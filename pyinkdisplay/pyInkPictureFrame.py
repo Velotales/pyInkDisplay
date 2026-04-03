@@ -51,7 +51,7 @@ from .pyUpdater import (
 )
 from .pyLoggingConfig import setupLogging
 from .pyNotifications import notifyIfConfigured
-from .pyUtils import fetchImageFromUrl
+from .pyUtils import fetchFallbackImage, fetchImageFromUrl
 
 # Global variables for signal handler access
 displayManager = None
@@ -319,6 +319,8 @@ def pyInkPictureFrame():
     updaterEnabled = updaterConfig.get("enabled", True)
     forceRevert = updaterConfig.get("force_revert", False)
     appriseConfig = config.get("apprise") if config else None
+    fallbackFile = merged.get("fallback_file")
+    iotdConfig = merged.get("image_of_the_day")
 
     loggingConfig = config.get("logging", {}) if config else {}
     setupLogging(loggingConfig)
@@ -347,8 +349,7 @@ def pyInkPictureFrame():
                 "pyInkDisplay: Image Fetch Failed",
                 f"Failed to fetch image from {merged['url']}",
             )
-            logging.error("No image available — aborting cycle.")
-            sys.exit(1)
+            image = fetchFallbackImage(fallback_file=fallbackFile, iotd_config=iotdConfig)
         logging.info(
             "Image fetched successfully. Displaying on EPD."
         )

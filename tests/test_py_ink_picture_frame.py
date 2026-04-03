@@ -267,18 +267,19 @@ def test_pyInkPictureFrame_reverts_when_force_revert_set():
 
 
 def test_pyInkPictureFrame_notifies_on_image_fetch_failure():
-    """Sends an Apprise notification when image fetch returns None, then exits."""
-    import pytest
-
+    """Sends an Apprise notification when image fetch returns None, then uses fallback."""
     with patch("pyinkdisplay.pyInkPictureFrame.parseArguments") as mock_args, \
-         patch("pyinkdisplay.pyInkPictureFrame.loadConfig", return_value={"apprise": {"url": "http://apprise.local"}}), \
+         patch("pyinkdisplay.pyInkPictureFrame.loadConfig",
+               return_value={"apprise": {"url": "http://apprise.local"}}), \
          patch("pyinkdisplay.pyInkPictureFrame.mergeArgsAndConfig", return_value={
              "epd": "waveshare_epd.epd7in3f", "url": "http://example.com",
              "alarmMinutes": 20, "noShutdown": True, "logging": None,
+             "fallback_file": None, "image_of_the_day": None,
          }), \
          patch("pyinkdisplay.pyInkPictureFrame.setupLogging"), \
          patch("pyinkdisplay.pyInkPictureFrame.PyInkDisplay"), \
          patch("pyinkdisplay.pyInkPictureFrame.fetchImageFromUrl", return_value=None), \
+         patch("pyinkdisplay.pyInkPictureFrame.fetchFallbackImage", return_value=MagicMock()), \
          patch("pyinkdisplay.pyInkPictureFrame.PiSugarAlarm") as mock_alarm_cls, \
          patch("pyinkdisplay.pyInkPictureFrame.runBatteryMode"), \
          patch("pyinkdisplay.pyInkPictureFrame.notifyIfConfigured") as mock_notify:
@@ -288,15 +289,44 @@ def test_pyInkPictureFrame_notifies_on_image_fetch_failure():
         mock_alarm.isSugarPowered.return_value = False
         mock_alarm_cls.return_value = mock_alarm
 
-        with pytest.raises(SystemExit) as exc_info:
-            pyInkPictureFrame()
-
-        assert exc_info.value.code == 1
+        pyInkPictureFrame()  # must NOT raise SystemExit
 
     mock_notify.assert_any_call(
         {"url": "http://apprise.local"},
         "pyInkDisplay: Image Fetch Failed",
         "Failed to fetch image from http://example.com",
+    )
+
+
+def test_pyInkPictureFrame_uses_fallback_when_main_fetch_fails():
+    """When main fetch returns None, calls fetchFallbackImage with config values."""
+    with patch("pyinkdisplay.pyInkPictureFrame.parseArguments") as mock_args, \
+         patch("pyinkdisplay.pyInkPictureFrame.loadConfig", return_value={}), \
+         patch("pyinkdisplay.pyInkPictureFrame.mergeArgsAndConfig", return_value={
+             "epd": "waveshare_epd.epd7in3f", "url": "http://example.com",
+             "alarmMinutes": 20, "noShutdown": True, "logging": None,
+             "fallback_file": "/some/image.png",
+             "image_of_the_day": {"provider": "inaturalist"},
+         }), \
+         patch("pyinkdisplay.pyInkPictureFrame.setupLogging"), \
+         patch("pyinkdisplay.pyInkPictureFrame.PyInkDisplay"), \
+         patch("pyinkdisplay.pyInkPictureFrame.fetchImageFromUrl", return_value=None), \
+         patch("pyinkdisplay.pyInkPictureFrame.fetchFallbackImage") as mock_fallback, \
+         patch("pyinkdisplay.pyInkPictureFrame.notifyIfConfigured"), \
+         patch("pyinkdisplay.pyInkPictureFrame.PiSugarAlarm") as mock_alarm_cls, \
+         patch("pyinkdisplay.pyInkPictureFrame.runBatteryMode"):
+
+        mock_args.return_value.config = None
+        mock_alarm = MagicMock()
+        mock_alarm.isSugarPowered.return_value = False
+        mock_alarm_cls.return_value = mock_alarm
+        mock_fallback.return_value = MagicMock()
+
+        pyInkPictureFrame()
+
+    mock_fallback.assert_called_once_with(
+        fallback_file="/some/image.png",
+        iotd_config={"provider": "inaturalist"},
     )
 
 
