@@ -275,3 +275,32 @@ def test_pyInkPictureFrame_reverts_when_force_revert_set():
 
     mock_apply.assert_called_once_with("v2.0.0")
     mock_restart.assert_called_once()
+
+
+def test_pyInkPictureFrame_notifies_on_image_fetch_failure():
+    """Sends an Apprise notification when image fetch returns None."""
+    with patch("pyinkdisplay.pyInkPictureFrame.parseArguments") as mock_args, \
+         patch("pyinkdisplay.pyInkPictureFrame.loadConfig", return_value={"apprise": {"url": "http://apprise.local"}}), \
+         patch("pyinkdisplay.pyInkPictureFrame.mergeArgsAndConfig", return_value={
+             "epd": "waveshare_epd.epd7in3f", "url": "http://example.com",
+             "alarmMinutes": 20, "noShutdown": True, "logging": None,
+         }), \
+         patch("pyinkdisplay.pyInkPictureFrame.setup_logging"), \
+         patch("pyinkdisplay.pyInkPictureFrame.PyInkDisplay"), \
+         patch("pyinkdisplay.pyInkPictureFrame.fetchImageFromUrl", return_value=None), \
+         patch("pyinkdisplay.pyInkPictureFrame.PiSugarAlarm") as mock_alarm_cls, \
+         patch("pyinkdisplay.pyInkPictureFrame.runBatteryMode"), \
+         patch("pyinkdisplay.pyInkPictureFrame.notify_if_configured") as mock_notify:
+
+        mock_args.return_value.config = "config.yaml"
+        mock_alarm = MagicMock()
+        mock_alarm.isSugarPowered.return_value = False
+        mock_alarm_cls.return_value = mock_alarm
+
+        pyInkPictureFrame()
+
+    mock_notify.assert_any_call(
+        {"url": "http://apprise.local"},
+        "pyInkDisplay: Image Fetch Failed",
+        "Failed to fetch image from http://example.com",
+    )

@@ -39,6 +39,7 @@ from .pyInkDisplay import EPDNotFoundError, PyInkDisplay
 from .pySugarAlarm import PiSugarAlarm
 from .updater import apply_update, check_and_apply_update, get_latest_tag, restart_service
 from .logging_config import setup_logging
+from .notifications import notify_if_configured
 from .utils import fetchImageFromUrl
 
 # Global variables for signal handler access
@@ -318,6 +319,7 @@ def pyInkPictureFrame():
     updaterConfig = config.get("updater", {}) if config else {}
     updaterEnabled = updaterConfig.get("enabled", True)
     forceRevert = updaterConfig.get("force_revert", False)
+    appriseConfig = config.get("apprise") if config else None
 
     loggingConfig = config.get("logging", {}) if config else {}
     setup_logging(loggingConfig)
@@ -338,9 +340,13 @@ def pyInkPictureFrame():
         displayManager = PyInkDisplay(epd_type=merged["epd"])
         logging.info("Attempting to fetch image from URL: %s", merged["url"])
         image = fetchImageFromUrl(merged["url"])
-
-        # Note: fetchImageFromUrl now returns a default image on failure.
-        # Therefore, this call always succeeds.
+        if image is None:
+            logging.warning("Image fetch returned None — using fallback.")
+            notify_if_configured(
+                appriseConfig,
+                "pyInkDisplay: Image Fetch Failed",
+                f"Failed to fetch image from {merged['url']}",
+            )
         logging.info(
             "Image fetched successfully (or fallback used). Displaying on EPD."
         )
@@ -393,9 +399,11 @@ def pyInkPictureFrame():
 
     except (EPDNotFoundError, RuntimeError) as e:
         logging.error("EPD display error: %s", e)
+        notify_if_configured(appriseConfig, "pyInkDisplay: EPD Error", str(e))
         sys.exit(1)
     except Exception as e:
         logging.error("An unexpected error occurred during EPD display: %s", e)
+        notify_if_configured(appriseConfig, "pyInkDisplay: Unexpected Error", str(e))
         sys.exit(1)
     finally:
         if displayManager:
