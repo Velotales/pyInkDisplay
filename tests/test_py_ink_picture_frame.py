@@ -195,3 +195,29 @@ def test_pyInkPictureFrame_checks_for_update_when_usb_powered():
         pyInkPictureFrame()
 
     mock_update.assert_called_once()
+
+
+def test_pyInkPictureFrame_skips_update_when_disabled_in_config():
+    """Skips update check when updater.enabled is false in config."""
+    with patch("pyinkdisplay.pyInkPictureFrame.parseArguments") as mock_args, \
+         patch("pyinkdisplay.pyInkPictureFrame.loadConfig", return_value={"updater": {"enabled": False}}), \
+         patch("pyinkdisplay.pyInkPictureFrame.mergeArgsAndConfig", return_value={
+             "epd": "waveshare_epd.epd7in3f", "url": "http://example.com",
+             "alarmMinutes": 20, "noShutdown": True, "logging": None,
+         }), \
+         patch("pyinkdisplay.pyInkPictureFrame.setupLogging"), \
+         patch("pyinkdisplay.pyInkPictureFrame.PyInkDisplay"), \
+         patch("pyinkdisplay.pyInkPictureFrame.fetchImageFromUrl", return_value=MagicMock()), \
+         patch("pyinkdisplay.pyInkPictureFrame.PiSugarAlarm") as mock_alarm_cls, \
+         patch("pyinkdisplay.pyInkPictureFrame.publishBatteryLevel"), \
+         patch("pyinkdisplay.pyInkPictureFrame.check_and_apply_update") as mock_update, \
+         patch("pyinkdisplay.pyInkPictureFrame.continuousEpdUpdateLoop"):
+
+        mock_args.return_value.config = "config.yaml"
+        mock_alarm = MagicMock()
+        mock_alarm.isSugarPowered.return_value = True
+        mock_alarm_cls.return_value = mock_alarm
+
+        pyInkPictureFrame()
+
+    mock_update.assert_not_called()

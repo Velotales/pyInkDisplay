@@ -314,6 +314,9 @@ def pyInkPictureFrame():
     merged = mergeArgsAndConfig(args, config)
     mqttConfig = config.get("mqtt") if config else None
 
+    updaterConfig = config.get("updater", {}) if config else {}
+    updaterEnabled = updaterConfig.get("enabled", True)
+
     setupLogging(merged.get("logging"))
 
     # Publish Home Assistant MQTT discovery if MQTT is configured
@@ -346,12 +349,15 @@ def pyInkPictureFrame():
         if alarmManager.isSugarPowered():
             logging.info("PiSugar is powered. Publishing battery level.")
             publishBatteryLevel(alarmManager, mqttConfig)
-            logging.info("Checking for updates...")
-            updated = check_and_apply_update()
-            if updated:
-                # Service is restarting — exit cleanly
-                logging.info("Update applied. Service is restarting.")
-                return
+            if updaterEnabled:
+                logging.info("Checking for updates...")
+                updated = check_and_apply_update()
+                if updated:
+                    # Service is restarting — exit cleanly
+                    logging.info("Update applied. Service is restarting.")
+                    return
+            else:
+                logging.info("Auto-update is disabled via config.")
             continuousEpdUpdateLoop(
                 displayManager,
                 alarmManager,

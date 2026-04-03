@@ -19,3 +19,5 @@ mqtt:
 #  level: "INFO"
 #  labels:
 #    job: "pyInkPictureFrame"
+updater:
+  enabled: true    # Set to false to disable auto-update entirely
