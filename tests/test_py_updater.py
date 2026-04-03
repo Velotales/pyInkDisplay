@@ -1,9 +1,13 @@
-from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-import pytest
-
-from pyinkdisplay.pyUpdater import getCurrentTag, getLatestTag, isDevMode
+from pyinkdisplay.pyUpdater import (
+    applyUpdate,
+    checkAndApplyUpdate,
+    getCurrentTag,
+    getLatestTag,
+    isDevMode,
+    restartService,
+)
 
 
 def test_get_current_tag_returns_tag_on_exact_match():
@@ -60,9 +64,6 @@ def test_is_dev_mode_false_when_marker_absent(tmp_path):
     """Returns False when the dev mode marker file is not present."""
     marker = tmp_path / "dev_mode"
     assert isDevMode(marker_path=marker) is False
-
-
-from pyinkdisplay.pyUpdater import applyUpdate, checkAndApplyUpdate, restartService
 
 
 def test_apply_update_checks_out_tag():

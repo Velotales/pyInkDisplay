@@ -128,7 +128,7 @@ def test_pyInkPictureFrame_calls_runBatteryMode_when_not_powered():
         "pyinkdisplay.pyInkPictureFrame.setupLogging"
     ), patch(
         "pyinkdisplay.pyInkPictureFrame.PyInkDisplay"
-    ) as mock_display, patch(
+    ), patch(
         "pyinkdisplay.pyInkPictureFrame.fetchImageFromUrl", return_value=MagicMock()
     ), patch(
         "pyinkdisplay.pyInkPictureFrame.PiSugarAlarm"
@@ -166,7 +166,7 @@ def test_pyInkPictureFrame_calls_continuousLoop_when_powered():
         "pyinkdisplay.pyInkPictureFrame.setupLogging"
     ), patch(
         "pyinkdisplay.pyInkPictureFrame.PyInkDisplay"
-    ) as mock_display, patch(
+    ), patch(
         "pyinkdisplay.pyInkPictureFrame.fetchImageFromUrl", return_value=MagicMock()
     ), patch(
         "pyinkdisplay.pyInkPictureFrame.PiSugarAlarm"
