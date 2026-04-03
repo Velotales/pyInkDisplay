@@ -40,11 +40,14 @@ rsync -avz --delete \
 echo "Writing dev mode marker on $TARGET ..."
 ssh "$TARGET" "touch $MARKER_PATH"
 
+echo "Setting up venv on $TARGET ..."
+ssh "$TARGET" "cd $REMOTE_DIR && python3 -m venv .venv && .venv/bin/pip install -q -r requirements.in"
+
 echo "Stopping $SERVICE_NAME on $TARGET ..."
 ssh "$TARGET" "sudo systemctl stop $SERVICE_NAME"
 
 echo "Deploy complete. Running directly (Ctrl+C to stop) ..."
-ssh "$TARGET" "cd $REMOTE_DIR && python3 -m pyinkdisplay -c $CONFIG_FILE"
+ssh "$TARGET" "cd $REMOTE_DIR && .venv/bin/python3 -m pyinkdisplay -c $CONFIG_FILE"
 
 echo ""
 echo "Run ./scripts/revert.sh $TARGET to restore the latest release and restart the service."
