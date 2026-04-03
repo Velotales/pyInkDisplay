@@ -17,7 +17,11 @@ def setup_logging(config: dict) -> None:
 
     Args:
         config (dict): The 'logging' config section, e.g.
-            {"backend": "syslog", "level": "INFO", "syslog": {"host": "...", "port": 514}}
+            {
+                "backend": "syslog",
+                "level": "INFO",
+                "syslog": {"host": "...", "port": 514},
+            }
     """
     backend = config.get("backend", "console")
     level_name = config.get("level", "INFO").upper()
@@ -29,7 +33,10 @@ def setup_logging(config: dict) -> None:
         _setup_syslog(config.get("syslog", {}), level)
     elif backend == "loki":
         logging.basicConfig(level=level, format=_FMT)
-        logging.warning("Loki backend is not yet implemented — falling back to console logging.")
+        logging.warning(
+            "Loki backend is not yet implemented"
+            " — falling back to console logging."
+        )
     else:
         logging.basicConfig(level=level, format=_FMT)
         logging.info("Console logging enabled.")
@@ -48,7 +55,10 @@ def _setup_seq(seq_config: dict, level: int) -> None:
         logging.info("Seq logging enabled.")
     except ImportError:
         logging.basicConfig(level=level, format=_FMT)
-        logging.warning("seqlog package not installed — falling back to console logging.")
+        logging.warning(
+            "seqlog package not installed"
+            " — falling back to console logging."
+        )
 
 
 def _setup_syslog(syslog_config: dict, level: int) -> None:

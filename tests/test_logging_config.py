@@ -22,7 +22,9 @@ def test_setup_logging_defaults_to_console():
 
 def test_setup_logging_syslog_adds_handler():
     """Syslog backend adds a SysLogHandler to the root logger."""
-    with patch("pyinkdisplay.logging_config.logging.handlers.SysLogHandler") as mock_handler_cls, \
+    with patch(
+        "pyinkdisplay.logging_config.logging.handlers.SysLogHandler"
+    ) as mock_handler_cls, \
          patch("pyinkdisplay.logging_config.logging.getLogger") as mock_get_logger:
         mock_root = MagicMock()
         mock_get_logger.return_value = mock_root
