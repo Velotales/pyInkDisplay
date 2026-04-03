@@ -41,7 +41,17 @@ echo "Writing dev mode marker on $TARGET ..."
 ssh "$TARGET" "touch $MARKER_PATH"
 
 echo "Setting up venv on $TARGET ..."
-ssh "$TARGET" "cd $REMOTE_DIR && python3 -m venv .venv && .venv/bin/pip install -r requirements.in"
+ssh "$TARGET" "cd $REMOTE_DIR && \
+    python3 -m venv .venv && \
+    CHECKSUM=\$(md5sum requirements.in | cut -d' ' -f1) && \
+    STORED=\$(cat .venv/.requirements_checksum 2>/dev/null || echo '') && \
+    if [ \"\$CHECKSUM\" != \"\$STORED\" ]; then \
+        echo 'requirements.in changed — installing dependencies...' && \
+        .venv/bin/pip install -r requirements.in && \
+        echo \"\$CHECKSUM\" > .venv/.requirements_checksum; \
+    else \
+        echo 'requirements.in unchanged — skipping pip install.'; \
+    fi"
 
 echo "Stopping $SERVICE_NAME on $TARGET ..."
 ssh "$TARGET" "sudo systemctl stop $SERVICE_NAME"
