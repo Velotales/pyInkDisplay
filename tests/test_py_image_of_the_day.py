@@ -2,6 +2,8 @@
 
 from unittest.mock import MagicMock, patch
 
+import requests as req
+
 import pyinkdisplay.pyImageOfTheDay as iotd
 
 
@@ -35,6 +37,14 @@ def test_fetchImageOfTheDay_dispatches_to_nasa_apod():
         result = iotd.fetchImageOfTheDay({"provider": "nasa_apod", "nasa_apod_key": "ABC123"})
     mock_fetch.assert_called_once_with("ABC123")
     assert result == mock_image
+
+
+def test_fetchImageOfTheDay_nasa_apod_uses_demo_key_when_not_configured():
+    """Uses DEMO_KEY when nasa_apod_key is absent from config."""
+    with patch("pyinkdisplay.pyImageOfTheDay._fetchNasaApodImage",
+               return_value=None) as mock_fetch:
+        iotd.fetchImageOfTheDay({"provider": "nasa_apod"})
+    mock_fetch.assert_called_once_with("DEMO_KEY")
 
 
 def test_fetchImageOfTheDay_unknown_provider_returns_none():
@@ -77,9 +87,21 @@ def test_fetchInaturalistImage_returns_none_on_empty_results():
     assert result is None
 
 
+def test_fetchInaturalistImage_returns_none_when_photos_list_is_empty():
+    """Returns None when observation has an empty photos list."""
+    mock_api_response = MagicMock()
+    mock_api_response.raise_for_status = MagicMock()
+    mock_api_response.json.return_value = {"results": [{"photos": []}]}
+
+    with patch("pyinkdisplay.pyImageOfTheDay.requests.get",
+               return_value=mock_api_response):
+        result = iotd._fetchInaturalistImage()
+
+    assert result is None
+
+
 def test_fetchInaturalistImage_returns_none_on_api_error():
     """Returns None when the iNaturalist API call raises."""
-    import requests as req
     with patch("pyinkdisplay.pyImageOfTheDay.requests.get",
                side_effect=req.exceptions.ConnectionError("refused")):
         result = iotd._fetchInaturalistImage()
@@ -125,7 +147,6 @@ def test_fetchNasaApodImage_returns_none_when_media_is_video():
 
 def test_fetchNasaApodImage_returns_none_on_api_error():
     """Returns None when the NASA APOD API call raises."""
-    import requests as req
     with patch("pyinkdisplay.pyImageOfTheDay.requests.get",
                side_effect=req.exceptions.ConnectionError("refused")):
         result = iotd._fetchNasaApodImage("DEMO_KEY")

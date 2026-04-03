@@ -37,9 +37,12 @@ from .pyUtils import fetchImageFromUrl
 
 logger = logging.getLogger(__name__)
 
+_INATURALIST_MAX_PAGE = 500  # upper bound to avoid sparse result pages
 _INATURALIST_API = (
     "https://api.inaturalist.org/v1/observations"
-    "?taxon_id=3&has[]=photos&quality_grade=research&per_page=1&page={page}"
+    "?taxon_id=3"  # taxon_id=3 is Aves (birds) in the iNaturalist taxonomy
+    "&has[]=photos&quality_grade=research"
+    "&per_page=1&page={page}"
 )
 _NASA_APOD_API = "https://api.nasa.gov/planetary/apod?api_key={key}"
 
@@ -68,7 +71,7 @@ def _fetchInaturalistImage() -> Optional[Image.Image]:
     Uses day-of-year as a page offset for a consistent daily image.
     """
     day_of_year = datetime.now().timetuple().tm_yday
-    page = (day_of_year % 500) + 1
+    page = (day_of_year % _INATURALIST_MAX_PAGE) + 1
     url = _INATURALIST_API.format(page=page)
     try:
         response = requests.get(url, timeout=10)
@@ -90,7 +93,7 @@ def _fetchNasaApodImage(api_key: str) -> Optional[Image.Image]:
     Fetch today's NASA Astronomy Picture of the Day.
     Returns None if today's APOD is a video rather than an image.
     """
-    url = _NASA_APOD_API.format(key=api_key or "DEMO_KEY")
+    url = _NASA_APOD_API.format(key=api_key)
     try:
         response = requests.get(url, timeout=10)
         response.raise_for_status()
@@ -101,6 +104,9 @@ def _fetchNasaApodImage(api_key: str) -> Optional[Image.Image]:
             )
             return None
         image_url = data.get("url")
+        if not image_url:
+            logger.warning("NASA APOD response missing 'url' field.")
+            return None
         logger.info("Fetching NASA APOD image from %s", image_url)
         return fetchImageFromUrl(image_url)
     except Exception as e:
