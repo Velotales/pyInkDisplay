@@ -33,28 +33,20 @@ def test_send_notification_returns_false_on_request_error():
 
 def test_notify_if_configured_sends_when_url_present():
     """Calls sendNotification when apprise_config contains a url."""
-    with patch(
-        "pyinkdisplay.pyNotifications.sendNotification"
-    ) as mock_send:
-        notifyIfConfigured(
-            {"url": "http://apprise.local:8000"}, "Title", "Body"
-        )
+    with patch("pyinkdisplay.pyNotifications.sendNotification") as mock_send:
+        notifyIfConfigured({"url": "http://apprise.local:8000"}, "Title", "Body")
     mock_send.assert_called_once_with("http://apprise.local:8000", "Title", "Body")
 
 
 def test_notify_if_configured_skips_when_no_config():
     """Does nothing when apprise_config is None."""
-    with patch(
-        "pyinkdisplay.pyNotifications.sendNotification"
-    ) as mock_send:
+    with patch("pyinkdisplay.pyNotifications.sendNotification") as mock_send:
         notifyIfConfigured(None, "Title", "Body")
     mock_send.assert_not_called()
 
 
 def test_notify_if_configured_skips_when_url_missing():
     """Does nothing when apprise_config has no url key."""
-    with patch(
-        "pyinkdisplay.pyNotifications.sendNotification"
-    ) as mock_send:
+    with patch("pyinkdisplay.pyNotifications.sendNotification") as mock_send:
         notifyIfConfigured({}, "Title", "Body")
     mock_send.assert_not_called()

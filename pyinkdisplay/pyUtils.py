@@ -91,7 +91,9 @@ def fetchFallbackImage(
     2. Image loaded from disk (if fallback_file configured)
     3. Generated default image (always available)
     """
-    from .pyImageOfTheDay import fetchImageOfTheDay  # lazy import: avoids circular dependency
+    from .pyImageOfTheDay import (
+        fetchImageOfTheDay,
+    )  # lazy import: avoids circular dependency
 
     image = fetchImageOfTheDay(iotd_config)
     if image is not None:

@@ -24,17 +24,20 @@ def test_setup_logging_syslog_adds_handler():
     """Syslog backend adds a SysLogHandler to the root logger."""
     with patch(
         "pyinkdisplay.pyLoggingConfig.logging.handlers.SysLogHandler"
-    ) as mock_handler_cls, \
-         patch("pyinkdisplay.pyLoggingConfig.logging.getLogger") as mock_get_logger:
+    ) as mock_handler_cls, patch(
+        "pyinkdisplay.pyLoggingConfig.logging.getLogger"
+    ) as mock_get_logger:
         mock_root = MagicMock()
         mock_get_logger.return_value = mock_root
         mock_handler_cls.return_value = MagicMock()
 
-        setupLogging({
-            "backend": "syslog",
-            "level": "WARNING",
-            "syslog": {"host": "logserver.local", "port": "514"},
-        })
+        setupLogging(
+            {
+                "backend": "syslog",
+                "level": "WARNING",
+                "syslog": {"host": "logserver.local", "port": "514"},
+            }
+        )
 
     mock_handler_cls.assert_called_once_with(address=("logserver.local", 514))
     mock_root.addHandler.assert_called_once()
@@ -43,8 +46,11 @@ def test_setup_logging_syslog_adds_handler():
 
 def test_setup_logging_loki_falls_back_to_console():
     """Loki backend logs a warning and falls back to console."""
-    with patch("pyinkdisplay.pyLoggingConfig.logging.basicConfig") as mock_config, \
-         patch("pyinkdisplay.pyLoggingConfig.logging.warning") as mock_warning:
+    with patch(
+        "pyinkdisplay.pyLoggingConfig.logging.basicConfig"
+    ) as mock_config, patch(
+        "pyinkdisplay.pyLoggingConfig.logging.warning"
+    ) as mock_warning:
         setupLogging({"backend": "loki"})
     mock_config.assert_called_once()
     mock_warning.assert_called_once()
@@ -55,11 +61,13 @@ def test_setup_logging_seq_calls_seqlog(monkeypatch):
     mock_seqlog = MagicMock()
     monkeypatch.setitem(__import__("sys").modules, "seqlog", mock_seqlog)
 
-    setupLogging({
-        "backend": "seq",
-        "level": "DEBUG",
-        "seq": {"url": "http://seq.local:5341"},
-    })
+    setupLogging(
+        {
+            "backend": "seq",
+            "level": "DEBUG",
+            "seq": {"url": "http://seq.local:5341"},
+        }
+    )
 
     mock_seqlog.log_to_seq.assert_called_once_with(
         server_url="http://seq.local:5341",
@@ -70,11 +78,15 @@ def test_setup_logging_seq_calls_seqlog(monkeypatch):
 
 def test_setup_logging_seq_falls_back_when_seqlog_missing():
     """Falls back to console logging when seqlog is not installed."""
-    with patch("pyinkdisplay.pyLoggingConfig.logging.basicConfig") as mock_config, \
-         patch("builtins.__import__", side_effect=lambda name, *a, **kw: (
-             (_ for _ in ()).throw(ImportError())
-             if name == "seqlog"
-             else __import__(name, *a, **kw)
-         )):
+    with patch(
+        "pyinkdisplay.pyLoggingConfig.logging.basicConfig"
+    ) as mock_config, patch(
+        "builtins.__import__",
+        side_effect=lambda name, *a, **kw: (
+            (_ for _ in ()).throw(ImportError())
+            if name == "seqlog"
+            else __import__(name, *a, **kw)
+        ),
+    ):
         setupLogging({"backend": "seq", "seq": {"url": "http://seq.local:5341"}})
     mock_config.assert_called_once()

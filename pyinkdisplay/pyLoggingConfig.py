@@ -56,8 +56,7 @@ def setupLogging(config: dict) -> None:
     elif backend == "loki":
         logging.basicConfig(level=level, format=_FMT)
         logging.warning(
-            "Loki backend is not yet implemented"
-            " — falling back to console logging."
+            "Loki backend is not yet implemented" " — falling back to console logging."
         )
     else:
         logging.basicConfig(level=level, format=_FMT)
@@ -78,8 +77,7 @@ def _setupSeq(seq_config: dict, level: int) -> None:
     except ImportError:
         logging.basicConfig(level=level, format=_FMT)
         logging.warning(
-            "seqlog package not installed"
-            " — falling back to console logging."
+            "seqlog package not installed" " — falling back to console logging."
         )
 
 

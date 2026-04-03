@@ -78,9 +78,7 @@ def isDevMode(marker_path: Optional[Path] = None) -> bool:
 def applyUpdate(latest_tag: str) -> bool:
     """Checkout the given tag. Returns True on success, False on failure."""
     try:
-        subprocess.run(
-            ["git", "checkout", latest_tag], capture_output=True, check=True
-        )
+        subprocess.run(["git", "checkout", latest_tag], capture_output=True, check=True)
         logger.info("Checked out tag %s successfully.", latest_tag)
         # Note: stale .pyc bytecode may persist after checkout; this is acceptable
         # because the systemd service restart replaces the running process
@@ -93,7 +91,11 @@ def applyUpdate(latest_tag: str) -> bool:
 def restartService(service_name: str = "pyInkDisplay.service") -> None:
     """Restart the named systemd service via sudo systemctl."""
     try:
-        subprocess.run(["sudo", "systemctl", "restart", service_name], capture_output=True, check=True)
+        subprocess.run(
+            ["sudo", "systemctl", "restart", service_name],
+            capture_output=True,
+            check=True,
+        )
         logger.info("Service %s restarted.", service_name)
     except subprocess.CalledProcessError as e:
         logger.error("Failed to restart service %s: %s", service_name, e)

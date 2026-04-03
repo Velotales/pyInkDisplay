@@ -351,7 +351,9 @@ def pyInkPictureFrame():
                 "pyInkDisplay: Image Fetch Failed",
                 f"Failed to fetch image from {merged['url']}",
             )
-            image = fetchFallbackImage(fallback_file=fallbackFile, iotd_config=iotdConfig)
+            image = fetchFallbackImage(
+                fallback_file=fallbackFile, iotd_config=iotdConfig
+            )
             logging.info("Fallback image ready. Displaying on EPD.")
         else:
             logging.info("Image fetched successfully. Displaying on EPD.")
@@ -383,7 +385,11 @@ def pyInkPictureFrame():
         batteryThreshold = (
             appriseConfig.get("battery_alert_threshold", 0) if appriseConfig else 0
         )
-        if batteryLevel is not None and batteryThreshold and batteryLevel < batteryThreshold:
+        if (
+            batteryLevel is not None
+            and batteryThreshold
+            and batteryLevel < batteryThreshold
+        ):
             notifyIfConfigured(
                 appriseConfig,
                 "pyInkDisplay: Low Battery",

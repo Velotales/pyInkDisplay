@@ -48,5 +48,6 @@ def test_publishHaTelemetryDiscovery_publishes_discovery_for_all_sensors():
         "update_available",
     ]
     for sensor in expected_sensors:
-        assert any(sensor in topic for topic in publish_topics), \
-            f"Missing discovery for {sensor}"
+        assert any(
+            sensor in topic for topic in publish_topics
+        ), f"Missing discovery for {sensor}"

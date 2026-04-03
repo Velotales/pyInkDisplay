@@ -119,9 +119,7 @@ def _mqttClient(mqtt_config: dict):
     """Create and connect a paho MQTT client."""
     client = mqtt.Client(protocol=mqtt.MQTTv5)
     if mqtt_config.get("username"):
-        client.username_pw_set(
-            mqtt_config["username"], mqtt_config.get("password", "")
-        )
+        client.username_pw_set(mqtt_config["username"], mqtt_config.get("password", ""))
     client.connect(
         mqtt_config.get("host", "localhost"),
         int(mqtt_config.get("port", 1883)),
@@ -139,15 +137,11 @@ def publishHaTelemetryDiscovery(mqtt_config: dict) -> None:
         client = _mqttClient(mqtt_config)
         client.loop_start()
         for sensor in _TELEMETRY_SENSORS:
-            discovery_topic = (
-                f"homeassistant/sensor/{sensor['field']}/config"
-            )
+            discovery_topic = f"homeassistant/sensor/{sensor['field']}/config"
             payload = {
                 "name": sensor["name"],
                 "state_topic": STATE_TOPIC,
-                "value_template": (
-                    f"{{{{ value_json.{sensor['field']} }}}}"
-                ),
+                "value_template": (f"{{{{ value_json.{sensor['field']} }}}}"),
                 "unique_id": sensor["unique_id"],
                 "device": _DEVICE,
             }

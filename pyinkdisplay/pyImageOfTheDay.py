@@ -100,7 +100,8 @@ def _fetchNasaApodImage(api_key: str) -> Optional[Image.Image]:
         data = response.json()
         if data.get("media_type") != "image":
             logger.warning(
-                "NASA APOD today is not an image (media_type=%s).", data.get("media_type")
+                "NASA APOD today is not an image (media_type=%s).",
+                data.get("media_type"),
             )
             return None
         image_url = data.get("url")
