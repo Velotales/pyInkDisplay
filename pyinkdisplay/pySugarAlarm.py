@@ -278,7 +278,7 @@ class PiSugarAlarm:
                 self._ensurePiSugarConnection()
                 assert self.pisugar is not None
                 isPlugged = self.pisugar.get_battery_power_plugged()
-                logger.info("PiSugar power plugged status: %s", isPlugged)
+                logger.debug("PiSugar power plugged status: %s", isPlugged)
                 return isPlugged
             except PiSugarConnectionError:
                 logger.error(
