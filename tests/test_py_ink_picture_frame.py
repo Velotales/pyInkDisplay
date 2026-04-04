@@ -171,6 +171,8 @@ def test_pyInkPictureFrame_calls_continuousLoop_when_powered():
     ), patch(
         "pyinkdisplay.pyInkPictureFrame.PiSugarAlarm"
     ) as mock_alarm_cls, patch(
+        "pyinkdisplay.pyInkPictureFrame.checkAndApplyUpdate", return_value=False
+    ), patch(
         "pyinkdisplay.pyInkPictureFrame.runBatteryMode"
     ) as mock_battery, patch(
         "pyinkdisplay.pyInkPictureFrame.continuousEpdUpdateLoop"

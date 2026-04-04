@@ -6,54 +6,57 @@ on:
       - 'v*'
 
 jobs:
-  release:
+  test:
+    name: "Tests: Ubuntu (mocked deps)"
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.11'
-    
-    - name: Install build tools
-      run: |
-        python -m pip install --upgrade pip
-        pip install build twine
-    
-    - name: Build package
-      run: |
-        python -m build
-    
-    - name: Extract version from tag
-      id: version
-      run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
-    
-    - name: Create Release
-      uses: softprops/action-gh-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: ${{ github.ref_name }}
-        name: Release ${{ github.ref_name }}
-        body: |
-          ## Changes in this Release
-          - Version ${{ steps.version.outputs.VERSION }}
-          - See commit history for detailed changes
-          
-          ## Installation
-          ```bash
-          pip install pyinkdisplay==${{ steps.version.outputs.VERSION }}
-          ```
-          
-          ## Raspberry Pi Deployment
-          1. Download the wheel file from this release
-          2. Install in your Pi environment:
-             ```bash
-             pip install pyinkdisplay-${{ steps.version.outputs.VERSION }}-py3-none-any.whl
-             ```
-        draft: false
-        prerelease: false
-        files: |
-          dist/pyinkdisplay-${{ steps.version.outputs.VERSION }}-py3-none-any.whl
-          dist/pyinkdisplay-${{ steps.version.outputs.VERSION }}.tar.gz
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install pip-tools and compile requirements
+        run: |
+          python -m pip install --upgrade pip
+          pip install pip-tools
+          pip-compile -q -o requirements-dev.txt requirements-dev.in
+
+      - name: Install dev dependencies
+        run: pip install -r requirements-dev.txt
+
+      - name: Run tests
+        run: pytest -q
+
+  release:
+    name: "Create Release"
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install build tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install build twine
+
+      - name: Build package
+        run: python -m build
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: |
+            dist/*.whl
+            dist/*.tar.gz
