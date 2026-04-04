@@ -272,9 +272,6 @@ def continuousEpdUpdateLoop(
         alarmManager.setAlarm(secondsInFuture=secondsInFuture)
         logging.info("PiSugar alarm setting process completed.")
 
-        # Publish battery level to MQTT after each update
-        publishBatteryLevel(alarmManager, mqttConfig)
-
         if not keepRunningOnPower:
             break
 
@@ -284,10 +281,27 @@ def continuousEpdUpdateLoop(
             logging.info("Updated image fetched successfully. Displaying on EPD.")
             displayManager.displayImage(updatedImage)
             logging.info("Updated image displayed on EPD.")
+            imageFetchStatus = "success"
         else:
             logging.warning(
                 "Failed to fetch updated image. Retrying after next interval."
             )
+            imageFetchStatus = "failure"
+
+        if mqttConfig:
+            try:
+                batteryLevel = alarmManager.getBatteryLevel()
+            except Exception:
+                batteryLevel = None
+            telemetry = {
+                "battery_level": batteryLevel,
+                "last_update_time": datetime.now(timezone.utc).isoformat(),
+                "image_fetch_status": imageFetchStatus,
+                "power_mode": "usb",
+                "software_version": getCurrentTag() or "unknown",
+                "update_available": False,
+            }
+            publishHaTelemetry(mqttConfig, telemetry)
 
         if not alarmManager.isSugarPowered():
             logging.info(
