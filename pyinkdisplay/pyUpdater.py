@@ -88,7 +88,7 @@ def applyUpdate(latest_tag: str) -> bool:
         return False
 
 
-def restartService(service_name: str = "pyInkDisplay.service") -> None:
+def restartService(service_name: str = "pyInkPictureFrame.service") -> None:
     """Restart the named systemd service via sudo systemctl."""
     try:
         subprocess.run(
