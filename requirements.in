@@ -22,5 +22,8 @@ tenacity
 # For MQTT support
 paho-mqtt
 
+# For Seq structured logging (optional)
+seqlog
+
 # PIL for image handling in tests and runtime
 pillow
