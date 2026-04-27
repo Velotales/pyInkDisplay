@@ -213,7 +213,8 @@ def runBatteryMode(alarmManager, alarmMinutes, mqttConfig, noShutdown):
         alarmManager.setAlarm(secondsInFuture=secondsInFuture)
     except Exception as e:
         logging.error(
-            "Failed to set RTC alarm: %s. Shutting down without alarm — device will not auto-wake.",
+            "Failed to set RTC alarm: %s. Shutting down without alarm"
+            " — device will not auto-wake.",
             e,
         )
     publishBatteryLevel(alarmManager, mqttConfig)
