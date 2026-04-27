@@ -25,6 +25,7 @@ SOFTWARE.
 """
 
 import logging
+import select
 import time
 from datetime import datetime, timedelta
 from typing import Any, Optional
@@ -191,6 +192,20 @@ class PiSugarAlarm:
         logger.info("Attempting to connect to PiSugar server...")
         try:
             self.connection, self.eventConnection = connect_tcp()
+            # pisugar-server sends b'long\n' to every new connection as a
+            # greeting. The library strips 'long' but leaves b'\n', which is
+            # truthy and so isn't retried — it causes 'Expected rtc_time but
+            # got \n'. Drain the command socket before PiSugarServer uses it.
+            # connect_tcp() returns raw socket.socket objects so select is safe.
+            time.sleep(0.1)
+            try:
+                while select.select([self.connection], [], [], 0.0)[0]:
+                    data = self.connection.recv(4096)
+                    if not data:
+                        break
+                    logger.debug("Drained PiSugar command socket greeting: %r", data)
+            except Exception:
+                pass
             self.pisugar = PiSugarServer(self.connection, self.eventConnection)
             logger.info("Successfully connected to PiSugar server.")
         except Exception as e:
