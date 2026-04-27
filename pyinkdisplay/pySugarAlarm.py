@@ -242,6 +242,23 @@ class PiSugarAlarm:
             )
         return rtcDatetimeAfterSync
 
+    def _resetConnection(self):
+        """
+        Closes and discards the current PiSugar TCP connection.
+        Needed before RTC operations to discard any async event notifications
+        (e.g. battery_power_plugged) that the server queued since the last call.
+        """
+        for attr in ("connection", "eventConnection"):
+            sock = getattr(self, attr, None)
+            if sock:
+                try:
+                    sock.close()
+                except Exception:
+                    pass
+        self.connection = None
+        self.eventConnection = None
+        self.pisugar = None
+
     def _ensurePiSugarConnection(self):
         """
         Ensures that a connection to the PiSugar server is established.
@@ -317,6 +334,10 @@ class PiSugarAlarm:
                                    to set the alarm.
         """
         logger.info("Starting alarm setup.")
+
+        # Reset connection to discard any async event notifications buffered since the
+        # last pisugar call (e.g. battery_power_plugged events that would desync RTC reads).
+        self._resetConnection()
 
         # 1. Check network connectivity
         logger.info("Checking network connectivity...")
