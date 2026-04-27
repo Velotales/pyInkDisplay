@@ -398,6 +398,7 @@ class PiSugarAlarm:
                     raise PiSugarError(f"Failed to set RTC time: {e}")
 
         # Sync RTC and get updated time
+        assert initialRtcTime is not None
         try:
             rtcDatetime = self._syncRtc(initialRtcTime)
         except PiSugarError as e:
@@ -447,6 +448,7 @@ class PiSugarAlarm:
 
             try:
                 # 127 means repeat every day
+                assert self.pisugar is not None
                 self.pisugar.rtc_alarm_set(nextAlarmDatetime, 127)
                 nowStr = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 logger.info("%s - Alarm set for [%s]", nowStr, nextAlarmFormatted)
