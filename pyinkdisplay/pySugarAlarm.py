@@ -350,25 +350,33 @@ class PiSugarAlarm:
             )
             time.sleep(5)
 
-        # Ensure connection to PiSugar
-        try:
-            self._ensurePiSugarConnection()
-        except PiSugarConnectionError as e:
-            logger.error("Connection error during alarm setup: %s", e)
-            raise PiSugarError(f"Failed to connect to PiSugar: {e}")
-
-        # Get initial RTC time
-        try:
-            assert self.pisugar is not None
-            initialRtcTime = self.pisugar.get_rtc_time()
-            logger.info("Initial RTC time from PiSugar: %s", initialRtcTime)
-        except Exception as e:
-            logger.error(f"Failed to get initial RTC time from PiSugar: {e}")
-            logger.error(
-                "Please ensure pisugar-server is running and you have permissions."
-            )
-            logger.error("Try running with 'sudo'. Exiting.")
-            raise PiSugarError(f"Failed to set RTC time: {e}")
+        # Connect and read initial RTC time, retrying if the connection handshake
+        # produces noise (pisugar-server emits initial status lines on connect that
+        # can land in the command socket buffer ahead of the real response).
+        _MAX_RTC_ATTEMPTS = 3
+        initialRtcTime = None
+        for attempt in range(1, _MAX_RTC_ATTEMPTS + 1):
+            try:
+                self._ensurePiSugarConnection()
+                assert self.pisugar is not None
+                initialRtcTime = self.pisugar.get_rtc_time()
+                logger.info("Initial RTC time from PiSugar: %s", initialRtcTime)
+                break
+            except PiSugarConnectionError as e:
+                logger.error("Connection error during alarm setup: %s", e)
+                raise PiSugarError(f"Failed to connect to PiSugar: {e}")
+            except Exception as e:
+                logger.warning(
+                    "Attempt %d/%d: failed to get RTC time: %s",
+                    attempt,
+                    _MAX_RTC_ATTEMPTS,
+                    e,
+                )
+                if attempt < _MAX_RTC_ATTEMPTS:
+                    time.sleep(0.5)
+                    self._resetConnection()
+                else:
+                    raise PiSugarError(f"Failed to set RTC time: {e}")
 
         # Sync RTC and get updated time
         try:
