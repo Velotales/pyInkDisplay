@@ -257,6 +257,10 @@ class PiSugarAlarm:
             )
         return rtcDatetimeAfterSync
 
+    def close(self):
+        """Close PiSugar TCP connections, stopping the library's event thread."""
+        self._resetConnection()
+
     def _resetConnection(self):
         """
         Closes and discards the current PiSugar TCP connection.

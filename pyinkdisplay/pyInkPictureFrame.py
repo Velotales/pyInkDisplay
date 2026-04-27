@@ -67,7 +67,8 @@ def signalHandler(sig, frame):
     if displayManager:
         displayManager.closeDisplay()
         logging.info("Display cleaned up.")
-    # PiSugar alarm manager doesn't require explicit GPIO cleanup; add if needed
+    if alarmManager:
+        alarmManager.close()
     logging.info("Exiting gracefully.")
     logging.shutdown()
     sys.exit(0)
