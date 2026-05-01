@@ -73,7 +73,9 @@ def isInQuietHours(now, quietConfig):
 def secondsUntilQuietEnd(now, quietConfig):
     """Return seconds from now until the end of the quiet window."""
     end_time = datetime.strptime(quietConfig["end"], "%H:%M").time()
-    end_dt = now.replace(hour=end_time.hour, minute=end_time.minute, second=0, microsecond=0)
+    end_dt = now.replace(
+        hour=end_time.hour, minute=end_time.minute, second=0, microsecond=0
+    )
     if end_dt <= now:
         end_dt += timedelta(days=1)
     return int((end_dt - now).total_seconds())
@@ -285,7 +287,9 @@ def continuousEpdUpdateLoop(
             remainingSleepTime -= sleepChunk
 
             if not alarmManager.isSugarPowered():
-                logging.info("Power disconnected during sleep. Transitioning to battery mode.")
+                logging.info(
+                    "Power disconnected during sleep. Transitioning to battery mode."
+                )
                 return True
 
         secondsInFuture = alarmMinutes * 60
@@ -521,7 +525,12 @@ def pyInkPictureFrame():
             logging.info("EPD display closed.")
 
 
-__all__ = ["pyInkPictureFrame", "runBatteryMode", "isInQuietHours", "secondsUntilQuietEnd"]
+__all__ = [
+    "pyInkPictureFrame",
+    "runBatteryMode",
+    "isInQuietHours",
+    "secondsUntilQuietEnd",
+]
 
 if __name__ == "__main__":
     pyInkPictureFrame()
