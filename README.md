@@ -21,6 +21,18 @@ Since this runs on battery, I wanted to make sure it does the minimum necessary 
 
 **On USB/mains power** it runs a continuous loop — fetch and display, publish telemetry, check for a newer release and update if one is found, then sleep for `alarmMinutes` and repeat.
 
+## Quiet Hours
+
+To avoid waking the display overnight, you can configure a quiet window. When the Pi wakes during this period it skips the display update entirely, sets the RTC alarm to fire at the end of the window, and shuts back down.
+
+```yaml
+quiet_hours:
+  start: "22:00"   # 24-hour format
+  end: "07:00"     # spans midnight automatically
+```
+
+The window can span midnight (e.g. `22:00` to `07:00`) or stay within a single day (e.g. `02:00` to `06:00`). The end time is exclusive — a wake at exactly `07:00` will proceed normally.
+
 ## Image Fallback
 
 If the configured URL can't be reached, rather than showing a blank screen I've set up a fallback chain:
