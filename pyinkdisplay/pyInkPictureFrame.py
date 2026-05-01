@@ -237,6 +237,9 @@ def continuousEpdUpdateLoop(
     """
     Continuously update the e-ink display at the specified interval while power is present.
 
+    Returns True if the loop exited due to power loss (caller should run battery shutdown),
+    False otherwise.
+
     Args:
         displayManager: The display manager object.
         alarmManager: The PiSugar alarm manager object.
@@ -244,8 +247,7 @@ def continuousEpdUpdateLoop(
         alarmMinutes (int): The interval in minutes for updating.
     """
     secondsInFuture = alarmMinutes * 60
-    keepRunningOnPower = True
-    while keepRunningOnPower:
+    while True:
         logging.info(
             "Next EPD update scheduled in %d minutes (%d seconds).",
             alarmMinutes,
@@ -254,7 +256,7 @@ def continuousEpdUpdateLoop(
         remainingSleepTime = secondsInFuture
         checkInterval = 5
 
-        while remainingSleepTime > 0 and keepRunningOnPower:
+        while remainingSleepTime > 0:
             sleepChunk = min(remainingSleepTime, checkInterval)
             time.sleep(sleepChunk)
             remainingSleepTime -= sleepChunk
@@ -266,8 +268,7 @@ def continuousEpdUpdateLoop(
                         "Exiting continuous update loop."
                     )
                 )
-                keepRunningOnPower = False
-                break
+                return True
 
         secondsInFuture = alarmMinutes * 60
         logging.info(
@@ -280,9 +281,6 @@ def continuousEpdUpdateLoop(
         )
         alarmManager.setAlarm(secondsInFuture=secondsInFuture)
         logging.info("PiSugar alarm setting process completed.")
-
-        if not keepRunningOnPower:
-            break
 
         logging.info("Attempting to fetch updated image from URL: %s", imageUrl)
         updatedImage = fetchImageFromUrl(imageUrl)
@@ -319,8 +317,9 @@ def continuousEpdUpdateLoop(
                     "Exiting continuous update loop."
                 )
             )
-            keepRunningOnPower = False
-            break
+            return True
+
+    return False
 
 
 def pyInkPictureFrame():
@@ -448,13 +447,21 @@ def pyInkPictureFrame():
                     return
             else:
                 logging.info("Auto-update is disabled via config.")
-            continuousEpdUpdateLoop(
+            power_lost = continuousEpdUpdateLoop(
                 displayManager,
                 alarmManager,
                 merged["url"],
                 merged["alarmMinutes"],
                 mqttConfig,
             )
+            if power_lost:
+                logging.info("PiSugar is on battery. Running one-shot battery mode.")
+                runBatteryMode(
+                    alarmManager,
+                    merged["alarmMinutes"],
+                    mqttConfig,
+                    merged["noShutdown"],
+                )
         else:
             logging.info("PiSugar is on battery. Running one-shot battery mode.")
             runBatteryMode(
