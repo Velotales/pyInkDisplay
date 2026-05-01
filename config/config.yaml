@@ -39,3 +39,10 @@ logging:
 updater:
   enabled: true        # Set to false to disable auto-update entirely
   force_revert: false  # Set to true to revert to latest release on next USB-power cycle
+
+# Quiet hours: skip display updates and sleep until end of window
+# Supports midnight-spanning windows (e.g. 22:00-07:00) and same-day windows (e.g. 02:00-06:00)
+# Remove or set to null to disable
+quiet_hours:
+  start: "22:00"
+  end: "07:00"
