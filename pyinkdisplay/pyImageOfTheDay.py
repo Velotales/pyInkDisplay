@@ -5,7 +5,7 @@ Supports iNaturalist (no auth) and NASA APOD (demo key or configured key).
 
 MIT License
 
-Copyright (c) 2025 Velotales
+Copyright (c) 2026 Velotales
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

@@ -1,7 +1,7 @@
 """
 MIT License
 
-Copyright (c) 2025 Velotales
+Copyright (c) 2025 - 2026 Velotales
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -30,7 +30,7 @@ import signal
 import subprocess
 import sys
 import time
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 import paho.mqtt.client as mqtt
 import yaml  # type: ignore[import-untyped]
@@ -56,6 +56,27 @@ from .pyUtils import fetchFallbackImage, fetchImageFromUrl
 # Global variables for signal handler access
 displayManager = None
 alarmManager = None
+
+
+def isInQuietHours(now, quietConfig):
+    """Return True if now falls inside the configured quiet window."""
+    if not quietConfig:
+        return False
+    start = datetime.strptime(quietConfig["start"], "%H:%M").time()
+    end = datetime.strptime(quietConfig["end"], "%H:%M").time()
+    current = now.time().replace(second=0, microsecond=0)
+    if start > end:  # spans midnight (e.g. 22:00-07:00)
+        return current >= start or current < end
+    return start <= current < end
+
+
+def secondsUntilQuietEnd(now, quietConfig):
+    """Return seconds from now until the end of the quiet window."""
+    end_time = datetime.strptime(quietConfig["end"], "%H:%M").time()
+    end_dt = now.replace(hour=end_time.hour, minute=end_time.minute, second=0, microsecond=0)
+    if end_dt <= now:
+        end_dt += timedelta(days=1)
+    return int((end_dt - now).total_seconds())
 
 
 def signalHandler(sig, frame):
@@ -343,6 +364,7 @@ def pyInkPictureFrame():
     appriseConfig = config.get("apprise") if config else None
     fallbackFile = config.get("fallback_file") if config else None
     iotdConfig = config.get("image_of_the_day") if config else None
+    quietConfig = config.get("quiet_hours") if config else None
 
     loggingConfig = config.get("logging", {}) if config else {}
     setupLogging(loggingConfig)
@@ -360,6 +382,20 @@ def pyInkPictureFrame():
         sys.exit(1)
 
     try:
+
+        now = datetime.now()
+        if isInQuietHours(now, quietConfig):
+            sleep_seconds = secondsUntilQuietEnd(now, quietConfig)
+            wake_time = now + timedelta(seconds=sleep_seconds)
+            logging.info(
+                "Quiet hours active (now: %s). Skipping display update and sleeping until %s (%d minutes).",
+                now.strftime("%H:%M"),
+                wake_time.strftime("%H:%M"),
+                sleep_seconds // 60,
+            )
+            alarmManager = PiSugarAlarm()
+            alarmManager.setAlarm(secondsInFuture=sleep_seconds)
+            return
 
         displayManager = PyInkDisplay(epd_type=merged["epd"])
         logging.info("Attempting to fetch image from URL: %s", merged["url"])
@@ -485,7 +521,7 @@ def pyInkPictureFrame():
             logging.info("EPD display closed.")
 
 
-__all__ = ["pyInkPictureFrame", "runBatteryMode"]
+__all__ = ["pyInkPictureFrame", "runBatteryMode", "isInQuietHours", "secondsUntilQuietEnd"]
 
 if __name__ == "__main__":
     pyInkPictureFrame()
