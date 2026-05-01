@@ -15,7 +15,6 @@ from pyinkdisplay.pyInkPictureFrame import (
     secondsUntilQuietEnd,
 )
 
-
 # --- isInQuietHours ---
 
 
