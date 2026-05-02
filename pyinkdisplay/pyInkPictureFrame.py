@@ -229,13 +229,10 @@ def runBatteryMode(alarmManager, alarmMinutes, mqttConfig, noShutdown):
     """
     secondsInFuture = alarmMinutes * 60
     wake_at = datetime.now() + timedelta(seconds=secondsInFuture)
+    alarm_ok = False
     try:
         alarmManager.setAlarm(secondsInFuture=secondsInFuture)
-        logging.info(
-            "RTC alarm set: waking at %s in %d minutes.",
-            wake_at.strftime("%H:%M"),
-            alarmMinutes,
-        )
+        alarm_ok = True
     except Exception as e:
         logging.error(
             "Failed to set RTC alarm: %s. Shutting down without alarm"
@@ -245,7 +242,14 @@ def runBatteryMode(alarmManager, alarmMinutes, mqttConfig, noShutdown):
     publishBatteryLevel(alarmManager, mqttConfig)
 
     if not noShutdown:
-        logging.info("Shutting down now.")
+        if alarm_ok:
+            logging.info(
+                "Shutting down — next wake at %s (%d min).",
+                wake_at.strftime("%H:%M"),
+                alarmMinutes,
+            )
+        else:
+            logging.info("Shutting down — no wake alarm set.")
         try:
             subprocess.run(["sudo", "shutdown", "now"], check=True)
         except Exception as e:
@@ -272,11 +276,11 @@ def continuousEpdUpdateLoop(
     """
     secondsInFuture = alarmMinutes * 60
     while True:
-        wake_at = datetime.now() + timedelta(seconds=secondsInFuture)
+        sleep_until = datetime.now() + timedelta(seconds=secondsInFuture)
         logging.info(
-            "Next update in %d minutes (at %s).",
+            "Sleeping %d min until %s.",
             alarmMinutes,
-            wake_at.strftime("%H:%M"),
+            sleep_until.strftime("%H:%M"),
         )
         remainingSleepTime = secondsInFuture
         checkInterval = 5
@@ -293,16 +297,18 @@ def continuousEpdUpdateLoop(
                 return True
 
         secondsInFuture = alarmMinutes * 60
-        next_wake_at = datetime.now() + timedelta(seconds=secondsInFuture)
         alarmManager.setAlarm(secondsInFuture=secondsInFuture)
-        logging.info(
-            "RTC alarm set: waking at %s in %d minutes.",
-            next_wake_at.strftime("%H:%M"),
-            alarmMinutes,
-        )
 
+        try:
+            battery_str = f"{alarmManager.getBatteryLevel():.1f}%"
+        except Exception:
+            battery_str = "N/A"
+        logging.info("── Update ── battery: %s", battery_str)
+
+        logging.info("Fetching image...")
         updatedImage = fetchImageFromUrl(imageUrl)
         if updatedImage:
+            logging.info("Displaying on EPD...")
             displayManager.displayImage(updatedImage)
             logging.info("EPD updated.")
             imageFetchStatus = "success"
@@ -389,7 +395,7 @@ def pyInkPictureFrame():
             "Starting | version: %s | power: %s | battery: %s | interval: %d min",
             getCurrentTag() or "dev",
             powerMode,
-            f"{batteryLevel}%" if batteryLevel is not None else "N/A",
+            f"{batteryLevel:.1f}%" if isinstance(batteryLevel, (int, float)) else "N/A",
             merged["alarmMinutes"],
         )
 
@@ -406,6 +412,7 @@ def pyInkPictureFrame():
             return
 
         displayManager = PyInkDisplay(epd_type=merged["epd"])
+        logging.info("Fetching image...")
         image = fetchImageFromUrl(merged["url"])
         imageFetchStatus = "success"
         if image is None:
@@ -419,9 +426,7 @@ def pyInkPictureFrame():
             image = fetchFallbackImage(
                 fallback_file=fallbackFile, iotd_config=iotdConfig
             )
-            logging.info("Fallback image obtained. Displaying on EPD.")
-        else:
-            logging.info("Image fetched. Displaying on EPD.")
+        logging.info("Displaying on EPD...")
         displayManager.displayImage(image)
         logging.info("EPD updated.")
 
@@ -477,6 +482,8 @@ def pyInkPictureFrame():
             elif updaterEnabled:
                 logging.info("Checking for updates...")
                 updated = checkAndApplyUpdate()
+                if not updated:
+                    logging.info("Up to date (%s).", getCurrentTag() or "dev")
                 if updated:
                     notifyIfConfigured(
                         appriseConfig,
