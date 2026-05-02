@@ -297,7 +297,6 @@ def continuousEpdUpdateLoop(
                 return True
 
         secondsInFuture = alarmMinutes * 60
-        alarmManager.setAlarm(secondsInFuture=secondsInFuture)
 
         try:
             battery_str = f"{alarmManager.getBatteryLevel():.1f}%"

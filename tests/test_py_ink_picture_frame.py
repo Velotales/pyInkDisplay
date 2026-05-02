@@ -28,6 +28,7 @@ Unit tests for pyInkPictureFrame.py
 from unittest.mock import MagicMock, patch
 
 from pyinkdisplay.pyInkPictureFrame import (
+    continuousEpdUpdateLoop,
     loadConfig,
     mergeArgsAndConfig,
     parseArguments,
@@ -643,3 +644,21 @@ def test_pyInkPictureFrame_notifies_when_update_applied():
         "pyInkDisplay: Update Applied",
         "Updated to latest release. Service is restarting.",
     )
+
+
+def test_continuousEpdUpdateLoop_does_not_call_setAlarm():
+    """USB loop must not set RTC alarm — alarm fires mid-sleep and causes Invalid request."""
+    display = MagicMock()
+    alarm = MagicMock()
+    alarm.getBatteryLevel.return_value = 75.0
+    # alarmMinutes=0 skips the sleep entirely; isSugarPowered False causes exit after one cycle.
+    alarm.isSugarPowered.return_value = False
+
+    with patch("pyinkdisplay.pyInkPictureFrame.fetchImageFromUrl") as mock_fetch:
+        mock_fetch.return_value = MagicMock()
+        result = continuousEpdUpdateLoop(
+            display, alarm, "http://example.com", alarmMinutes=0
+        )
+
+    alarm.setAlarm.assert_not_called()
+    assert result is True
