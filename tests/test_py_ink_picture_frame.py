@@ -646,6 +646,82 @@ def test_pyInkPictureFrame_notifies_when_update_applied():
     )
 
 
+def test_pyInkPictureFrame_shuts_down_during_quiet_hours_on_battery():
+    """In battery mode, quiet hours must set alarm AND shut down (not just return)."""
+    with patch("pyinkdisplay.pyInkPictureFrame.parseArguments") as mock_args, patch(
+        "pyinkdisplay.pyInkPictureFrame.loadConfig", return_value={}
+    ), patch(
+        "pyinkdisplay.pyInkPictureFrame.mergeArgsAndConfig",
+        return_value={
+            "epd": "waveshare_epd.epd7in3f",
+            "url": "http://example.com",
+            "alarmMinutes": 120,
+            "noShutdown": False,
+            "logging": None,
+        },
+    ), patch(
+        "pyinkdisplay.pyInkPictureFrame.setupLogging"
+    ), patch(
+        "pyinkdisplay.pyInkPictureFrame.getCurrentTag", return_value="v0.3.5"
+    ), patch(
+        "pyinkdisplay.pyInkPictureFrame.PiSugarAlarm"
+    ) as mock_alarm_cls, patch(
+        "pyinkdisplay.pyInkPictureFrame.isInQuietHours", return_value=True
+    ), patch(
+        "pyinkdisplay.pyInkPictureFrame.secondsUntilQuietEnd", return_value=3600
+    ), patch(
+        "pyinkdisplay.pyInkPictureFrame.subprocess.run"
+    ) as mock_run:
+
+        mock_args.return_value.config = None
+        mock_alarm = MagicMock()
+        mock_alarm.isSugarPowered.return_value = False
+        mock_alarm_cls.return_value = mock_alarm
+
+        pyInkPictureFrame()
+
+    mock_alarm.setAlarm.assert_called_once_with(secondsInFuture=3600)
+    mock_run.assert_called_once_with(["sudo", "shutdown", "now"], check=True)
+
+
+def test_pyInkPictureFrame_skips_shutdown_during_quiet_hours_when_noShutdown():
+    """noShutdown flag suppresses the shutdown call even in battery + quiet hours."""
+    with patch("pyinkdisplay.pyInkPictureFrame.parseArguments") as mock_args, patch(
+        "pyinkdisplay.pyInkPictureFrame.loadConfig", return_value={}
+    ), patch(
+        "pyinkdisplay.pyInkPictureFrame.mergeArgsAndConfig",
+        return_value={
+            "epd": "waveshare_epd.epd7in3f",
+            "url": "http://example.com",
+            "alarmMinutes": 120,
+            "noShutdown": True,
+            "logging": None,
+        },
+    ), patch(
+        "pyinkdisplay.pyInkPictureFrame.setupLogging"
+    ), patch(
+        "pyinkdisplay.pyInkPictureFrame.getCurrentTag", return_value="v0.3.5"
+    ), patch(
+        "pyinkdisplay.pyInkPictureFrame.PiSugarAlarm"
+    ) as mock_alarm_cls, patch(
+        "pyinkdisplay.pyInkPictureFrame.isInQuietHours", return_value=True
+    ), patch(
+        "pyinkdisplay.pyInkPictureFrame.secondsUntilQuietEnd", return_value=3600
+    ), patch(
+        "pyinkdisplay.pyInkPictureFrame.subprocess.run"
+    ) as mock_run:
+
+        mock_args.return_value.config = None
+        mock_alarm = MagicMock()
+        mock_alarm.isSugarPowered.return_value = False
+        mock_alarm_cls.return_value = mock_alarm
+
+        pyInkPictureFrame()
+
+    mock_alarm.setAlarm.assert_called_once_with(secondsInFuture=3600)
+    mock_run.assert_not_called()
+
+
 def test_continuousEpdUpdateLoop_does_not_call_setAlarm():
     """USB loop must not set RTC alarm — alarm fires mid-sleep and causes Invalid request."""
     display = MagicMock()
