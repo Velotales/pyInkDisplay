@@ -30,6 +30,8 @@ if [[ -z "\$LATEST_TAG" ]]; then
     exit 1
 fi
 echo "Checking out \$LATEST_TAG ..."
+git reset --hard
+git clean -fd
 git checkout "\$LATEST_TAG"
 rm -f $MARKER_PATH
 echo "Dev mode marker removed."
