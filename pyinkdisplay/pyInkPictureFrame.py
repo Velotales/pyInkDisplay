@@ -408,11 +408,17 @@ def pyInkPictureFrame():
                 sleep_seconds // 60,
             )
             alarmManager.setAlarm(secondsInFuture=sleep_seconds)
-            if powerMode == "battery" and not merged.get("noShutdown"):
-                try:
-                    subprocess.run(["sudo", "shutdown", "now"], check=True)
-                except Exception as e:
-                    logging.error("Error during shutdown: %s", e)
+            if not merged.get("noShutdown"):
+                if powerMode == "battery":
+                    try:
+                        subprocess.run(["sudo", "shutdown", "now"], check=True)
+                    except Exception as e:
+                        logging.error("Error during shutdown: %s", e)
+                else:
+                    logging.info(
+                        "USB power — sleeping in process until quiet hours end."
+                    )
+                    time.sleep(sleep_seconds)
             return
 
         displayManager = PyInkDisplay(epd_type=merged["epd"])
