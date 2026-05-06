@@ -23,6 +23,8 @@ SOFTWARE.
 
 """
 
+from importlib.metadata import PackageNotFoundError, version
+
 from . import pyUtils
 from .pyInkDisplay import EPDNotFoundError, PyInkDisplay
 from .pySugarAlarm import PiSugarAlarm, PiSugarConnectionError, PiSugarError
@@ -36,4 +38,7 @@ __all__ = [
     "pyUtils",
 ]
 
-__version__ = "1.0.0"
+try:
+    __version__ = version("pyinkdisplay")
+except PackageNotFoundError:
+    __version__ = "unknown"

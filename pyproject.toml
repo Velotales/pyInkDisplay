@@ -8,12 +8,12 @@ line-length = 88
 max-line-length = 88
 
 [build-system]
-requires = ["setuptools>=45", "wheel"]
+requires = ["setuptools>=45", "wheel", "setuptools-scm>=8"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "pyinkdisplay"
-version = "0.3.2"
+dynamic = ["version"]
 description = "Display a picture on an e-ink display"
 authors = [{name = "Velotales", email = "velotales@gmail.com"}]
 license = {text = "MIT"}
@@ -44,3 +44,5 @@ addopts = "-ra -q --strict-markers"
 markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
 ]
+
+[tool.setuptools_scm]
