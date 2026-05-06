@@ -709,7 +709,9 @@ def test_pyInkPictureFrame_skips_shutdown_during_quiet_hours_when_noShutdown():
         "pyinkdisplay.pyInkPictureFrame.secondsUntilQuietEnd", return_value=3600
     ), patch(
         "pyinkdisplay.pyInkPictureFrame.subprocess.run"
-    ) as mock_run:
+    ) as mock_run, patch(
+        "pyinkdisplay.pyInkPictureFrame.time.sleep"
+    ) as mock_sleep:
 
         mock_args.return_value.config = None
         mock_alarm = MagicMock()
@@ -720,6 +722,7 @@ def test_pyInkPictureFrame_skips_shutdown_during_quiet_hours_when_noShutdown():
 
     mock_alarm.setAlarm.assert_called_once_with(secondsInFuture=3600)
     mock_run.assert_not_called()
+    mock_sleep.assert_not_called()
 
 
 def test_continuousEpdUpdateLoop_does_not_call_setAlarm():
