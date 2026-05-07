@@ -87,7 +87,7 @@ def test_secondsUntilQuietEnd_before_midnight():
 
 
 def test_pyInkPictureFrame_quiet_hours_usb_sleeps_in_process():
-    """On USB power during quiet hours: set alarm and sleep in-process (no shutdown)."""
+    """On USB power during quiet hours: sleep in-process only — no RTC alarm, no shutdown."""
     mock_alarm = MagicMock()
     mock_alarm.isSugarPowered.return_value = True  # USB
 
@@ -127,7 +127,7 @@ def test_pyInkPictureFrame_quiet_hours_usb_sleeps_in_process():
         pyInkPictureFrame()
 
     mock_fetch.assert_not_called()
-    mock_alarm.setAlarm.assert_called_once_with(secondsInFuture=28800)
+    mock_alarm.setAlarm.assert_not_called()
     mock_sleep.assert_called_once_with(28800)
     mock_run.assert_not_called()
 
@@ -219,6 +219,6 @@ def test_pyInkPictureFrame_quiet_hours_no_shutdown_flag_skips_sleep_and_shutdown
         pyInkPictureFrame()
 
     mock_fetch.assert_not_called()
-    mock_alarm.setAlarm.assert_called_once_with(secondsInFuture=28800)
+    mock_alarm.setAlarm.assert_not_called()
     mock_sleep.assert_not_called()
     mock_run.assert_not_called()
