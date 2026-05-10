@@ -10,6 +10,7 @@ from datetime import datetime
 from unittest.mock import MagicMock, patch
 
 from pyinkdisplay.pyInkPictureFrame import (
+    continuousEpdUpdateLoop,
     isInQuietHours,
     pyInkPictureFrame,
     secondsUntilQuietEnd,
@@ -86,53 +87,29 @@ def test_secondsUntilQuietEnd_before_midnight():
 # --- integration: skip display during quiet hours ---
 
 
-def test_pyInkPictureFrame_quiet_hours_usb_sleeps_then_restarts():
-    """On USB power during quiet hours: sleep in-process, then restart service when done."""
+def test_continuousEpdUpdateLoop_skips_display_during_quiet_hours():
+    """During quiet hours, the loop skips display without calling fetchImageFromUrl."""
     mock_alarm = MagicMock()
-    mock_alarm.isSugarPowered.return_value = True  # USB
-
-    with patch("pyinkdisplay.pyInkPictureFrame.parseArguments") as mock_args, patch(
-        "pyinkdisplay.pyInkPictureFrame.loadConfig",
-        return_value={"quiet_hours": {"start": "22:00", "end": "07:00"}},
+    mock_alarm.isSugarPowered.return_value = False
+    mock_display = MagicMock()
+    with patch(
+        "pyinkdisplay.pyInkPictureFrame.isInQuietHours", return_value=True
     ), patch(
-        "pyinkdisplay.pyInkPictureFrame.mergeArgsAndConfig",
-        return_value={
-            "epd": "waveshare_epd.epd7in3f",
-            "url": "http://example.com",
-            "alarmMinutes": 120,
-            "noShutdown": False,
-            "logging": None,
-        },
-    ), patch(
-        "pyinkdisplay.pyInkPictureFrame.setupLogging"
-    ), patch(
-        "pyinkdisplay.pyInkPictureFrame.PyInkDisplay"
-    ), patch(
-        "pyinkdisplay.pyInkPictureFrame.PiSugarAlarm", return_value=mock_alarm
+        "pyinkdisplay.pyInkPictureFrame.secondsUntilQuietEnd", return_value=60
     ), patch(
         "pyinkdisplay.pyInkPictureFrame.fetchImageFromUrl"
     ) as mock_fetch, patch(
-        "pyinkdisplay.pyInkPictureFrame.isInQuietHours", return_value=True
-    ), patch(
-        "pyinkdisplay.pyInkPictureFrame.secondsUntilQuietEnd", return_value=28800
-    ), patch(
-        "pyinkdisplay.pyInkPictureFrame.getCurrentTag", return_value="v0.3.6"
-    ), patch(
         "pyinkdisplay.pyInkPictureFrame.time.sleep"
-    ) as mock_sleep, patch(
-        "pyinkdisplay.pyInkPictureFrame.subprocess.run"
-    ) as mock_run, patch(
-        "pyinkdisplay.pyInkPictureFrame.restartService"
-    ) as mock_restart:
-
-        mock_args.return_value.config = "config.yaml"
-        pyInkPictureFrame()
-
+    ):
+        continuousEpdUpdateLoop(
+            mock_display,
+            mock_alarm,
+            "http://example.com",
+            alarmMinutes=0,
+            quietConfig={"start": "22:00", "end": "07:00"},
+        )
     mock_fetch.assert_not_called()
-    mock_alarm.setAlarm.assert_not_called()
-    mock_sleep.assert_called_once_with(28800)
-    mock_run.assert_not_called()
-    mock_restart.assert_called_once()
+    mock_display.displayImage.assert_not_called()
 
 
 def test_pyInkPictureFrame_quiet_hours_battery_shuts_down():
@@ -179,49 +156,3 @@ def test_pyInkPictureFrame_quiet_hours_battery_shuts_down():
     mock_alarm.setAlarm.assert_called_once_with(secondsInFuture=28800)
     mock_run.assert_called_once_with(["sudo", "shutdown", "now"], check=True)
     mock_sleep.assert_not_called()
-
-
-def test_pyInkPictureFrame_quiet_hours_no_shutdown_flag_skips_sleep_and_shutdown():
-    """noShutdown=True suppresses both shutdown and in-process sleep (dev mode)."""
-    mock_alarm = MagicMock()
-    mock_alarm.isSugarPowered.return_value = True  # USB
-
-    with patch("pyinkdisplay.pyInkPictureFrame.parseArguments") as mock_args, patch(
-        "pyinkdisplay.pyInkPictureFrame.loadConfig",
-        return_value={"quiet_hours": {"start": "22:00", "end": "07:00"}},
-    ), patch(
-        "pyinkdisplay.pyInkPictureFrame.mergeArgsAndConfig",
-        return_value={
-            "epd": "waveshare_epd.epd7in3f",
-            "url": "http://example.com",
-            "alarmMinutes": 120,
-            "noShutdown": True,
-            "logging": None,
-        },
-    ), patch(
-        "pyinkdisplay.pyInkPictureFrame.setupLogging"
-    ), patch(
-        "pyinkdisplay.pyInkPictureFrame.PyInkDisplay"
-    ), patch(
-        "pyinkdisplay.pyInkPictureFrame.PiSugarAlarm", return_value=mock_alarm
-    ), patch(
-        "pyinkdisplay.pyInkPictureFrame.fetchImageFromUrl"
-    ) as mock_fetch, patch(
-        "pyinkdisplay.pyInkPictureFrame.isInQuietHours", return_value=True
-    ), patch(
-        "pyinkdisplay.pyInkPictureFrame.secondsUntilQuietEnd", return_value=28800
-    ), patch(
-        "pyinkdisplay.pyInkPictureFrame.getCurrentTag", return_value="v0.3.6"
-    ), patch(
-        "pyinkdisplay.pyInkPictureFrame.time.sleep"
-    ) as mock_sleep, patch(
-        "pyinkdisplay.pyInkPictureFrame.subprocess.run"
-    ) as mock_run:
-
-        mock_args.return_value.config = "config.yaml"
-        pyInkPictureFrame()
-
-    mock_fetch.assert_not_called()
-    mock_alarm.setAlarm.assert_not_called()
-    mock_sleep.assert_not_called()
-    mock_run.assert_not_called()

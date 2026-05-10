@@ -260,75 +260,81 @@ def runBatteryMode(alarmManager, alarmMinutes, mqttConfig, noShutdown):
 
 
 def continuousEpdUpdateLoop(
-    displayManager, alarmManager, imageUrl, alarmMinutes, mqttConfig=None
+    displayManager,
+    alarmManager,
+    imageUrl,
+    alarmMinutes,
+    mqttConfig=None,
+    quietConfig=None,
 ):
     """
     Continuously update the e-ink display at the specified interval while power is present.
 
     Returns True if the loop exited due to power loss (caller should run battery shutdown),
     False otherwise.
-
-    Args:
-        displayManager: The display manager object.
-        alarmManager: The PiSugar alarm manager object.
-        imageUrl (str): The URL to fetch images from.
-        alarmMinutes (int): The interval in minutes for updating.
     """
-    secondsInFuture = alarmMinutes * 60
     while True:
-        sleep_until = datetime.now() + timedelta(seconds=secondsInFuture)
+        now = datetime.now()
+        if isInQuietHours(now, quietConfig):
+            sleep_seconds = secondsUntilQuietEnd(now, quietConfig)
+            wake_time = now + timedelta(seconds=sleep_seconds)
+            logging.info(
+                "Quiet hours active — skipping update, resuming at %s.",
+                wake_time.strftime("%H:%M"),
+            )
+        else:
+            try:
+                battery_str = f"{alarmManager.getBatteryLevel():.1f}%"
+            except Exception:
+                battery_str = "N/A"
+            logging.info("── Update ── battery: %s", battery_str)
+
+            logging.info("Fetching image...")
+            updatedImage = fetchImageFromUrl(imageUrl)
+            if updatedImage:
+                logging.info("Displaying on EPD...")
+                displayManager.displayImage(updatedImage)
+                logging.info("EPD updated.")
+                imageFetchStatus = "success"
+            else:
+                logging.warning("Image fetch failed. Will retry after next interval.")
+                imageFetchStatus = "failure"
+
+            if mqttConfig:
+                try:
+                    batteryLevel = alarmManager.getBatteryLevel()
+                except Exception:
+                    batteryLevel = None
+                telemetry = {
+                    "battery_level": batteryLevel,
+                    "last_update_time": datetime.now(timezone.utc).isoformat(),
+                    "image_fetch_status": imageFetchStatus,
+                    "power_mode": "usb",
+                    "software_version": getCurrentTag() or "unknown",
+                    "update_available": False,
+                }
+                publishHaTelemetry(mqttConfig, telemetry)
+
+            sleep_seconds = alarmMinutes * 60
+
+        sleep_until = datetime.now() + timedelta(seconds=sleep_seconds)
         logging.info(
             "Sleeping %d min until %s.",
-            alarmMinutes,
+            sleep_seconds // 60,
             sleep_until.strftime("%H:%M"),
         )
-        remainingSleepTime = secondsInFuture
         checkInterval = 5
+        remainingSleepTime = sleep_seconds
 
         while remainingSleepTime > 0:
             sleepChunk = min(remainingSleepTime, checkInterval)
             time.sleep(sleepChunk)
             remainingSleepTime -= sleepChunk
-
             if not alarmManager.isSugarPowered():
                 logging.info(
                     "Power disconnected during sleep. Transitioning to battery mode."
                 )
                 return True
-
-        secondsInFuture = alarmMinutes * 60
-
-        try:
-            battery_str = f"{alarmManager.getBatteryLevel():.1f}%"
-        except Exception:
-            battery_str = "N/A"
-        logging.info("── Update ── battery: %s", battery_str)
-
-        logging.info("Fetching image...")
-        updatedImage = fetchImageFromUrl(imageUrl)
-        if updatedImage:
-            logging.info("Displaying on EPD...")
-            displayManager.displayImage(updatedImage)
-            logging.info("EPD updated.")
-            imageFetchStatus = "success"
-        else:
-            logging.warning("Image fetch failed. Will retry after next interval.")
-            imageFetchStatus = "failure"
-
-        if mqttConfig:
-            try:
-                batteryLevel = alarmManager.getBatteryLevel()
-            except Exception:
-                batteryLevel = None
-            telemetry = {
-                "battery_level": batteryLevel,
-                "last_update_time": datetime.now(timezone.utc).isoformat(),
-                "image_fetch_status": imageFetchStatus,
-                "power_mode": "usb",
-                "software_version": getCurrentTag() or "unknown",
-                "update_available": False,
-            }
-            publishHaTelemetry(mqttConfig, telemetry)
 
         if not alarmManager.isSugarPowered():
             try:
@@ -398,82 +404,9 @@ def pyInkPictureFrame():
             merged["alarmMinutes"],
         )
 
-        now = datetime.now()
-        if isInQuietHours(now, quietConfig):
-            sleep_seconds = secondsUntilQuietEnd(now, quietConfig)
-            wake_time = now + timedelta(seconds=sleep_seconds)
-            logging.info(
-                "Quiet hours active — sleeping until %s (%d minutes).",
-                wake_time.strftime("%H:%M"),
-                sleep_seconds // 60,
-            )
-            if powerMode == "battery":
-                alarmManager.setAlarm(secondsInFuture=sleep_seconds)
-                if not merged.get("noShutdown"):
-                    try:
-                        subprocess.run(["sudo", "shutdown", "now"], check=True)
-                    except Exception as e:
-                        logging.error("Error during shutdown: %s", e)
-            elif not merged.get("noShutdown"):
-                logging.info("USB power — sleeping in process until quiet hours end.")
-                time.sleep(sleep_seconds)
-                restartService()
-            return
-
-        displayManager = PyInkDisplay(epd_type=merged["epd"])
-        logging.info("Fetching image...")
-        image = fetchImageFromUrl(merged["url"])
-        imageFetchStatus = "success"
-        if image is None:
-            imageFetchStatus = "failure"
-            logging.warning("Image fetch failed — using fallback.")
-            notifyIfConfigured(
-                appriseConfig,
-                "pyInkDisplay: Image Fetch Failed",
-                f"Failed to fetch image from {merged['url']}",
-            )
-            image = fetchFallbackImage(
-                fallback_file=fallbackFile, iotd_config=iotdConfig
-            )
-        logging.info("Displaying on EPD...")
-        displayManager.displayImage(image)
-        logging.info("EPD updated.")
-
-        try:
-            batteryLevel = alarmManager.getBatteryLevel()
-        except Exception:
-            pass  # keep startup value
-
-        telemetry = {
-            "battery_level": batteryLevel,
-            "last_update_time": datetime.now(timezone.utc).isoformat(),
-            "image_fetch_status": imageFetchStatus,
-            "power_mode": powerMode,
-            "software_version": getCurrentTag() or "unknown",
-            # update_available: computed after check_and_apply_update below;
-            # always False here (USB path updates telemetry before the check)
-            "update_available": False,
-        }
-
-        if mqttConfig:
-            publishHaTelemetry(mqttConfig, telemetry)
-
-        batteryThreshold = (
-            appriseConfig.get("battery_alert_threshold", 0) if appriseConfig else 0
-        )
-        if (
-            batteryLevel is not None
-            and batteryThreshold
-            and batteryLevel < batteryThreshold
-        ):
-            notifyIfConfigured(
-                appriseConfig,
-                "pyInkDisplay: Low Battery",
-                f"Battery level is {batteryLevel}% (threshold: {batteryThreshold}%)",
-            )
-
         if alarmManager.isSugarPowered():
-            logging.info("PiSugar is powered. Entering continuous update loop.")
+            # USB mode: the loop handles display each iteration
+            displayManager = PyInkDisplay(epd_type=merged["epd"])
             # force_revert intentionally bypasses the is_dev_mode() check in
             # check_and_apply_update — it is designed to escape dev mode
             if forceRevert:
@@ -503,12 +436,14 @@ def pyInkPictureFrame():
                     return
             else:
                 logging.info("Auto-update is disabled via config.")
+            logging.info("PiSugar is on USB power. Entering continuous update loop.")
             power_lost = continuousEpdUpdateLoop(
                 displayManager,
                 alarmManager,
                 merged["url"],
                 merged["alarmMinutes"],
                 mqttConfig,
+                quietConfig,
             )
             if power_lost:
                 logging.info("PiSugar is on battery. Running one-shot battery mode.")
@@ -519,13 +454,82 @@ def pyInkPictureFrame():
                     merged["noShutdown"],
                 )
         else:
-            logging.info("PiSugar is on battery. Running one-shot battery mode.")
-            runBatteryMode(
-                alarmManager,
-                merged["alarmMinutes"],
-                mqttConfig,
-                merged["noShutdown"],
-            )
+            # Battery mode: check quiet hours before displaying
+            now = datetime.now()
+            if isInQuietHours(now, quietConfig):
+                sleep_seconds = secondsUntilQuietEnd(now, quietConfig)
+                wake_time = now + timedelta(seconds=sleep_seconds)
+                logging.info(
+                    "Quiet hours active — skipping display, waking at %s (%d min).",
+                    wake_time.strftime("%H:%M"),
+                    sleep_seconds // 60,
+                )
+                alarmManager.setAlarm(secondsInFuture=sleep_seconds)
+                if not merged.get("noShutdown"):
+                    try:
+                        subprocess.run(["sudo", "shutdown", "now"], check=True)
+                    except Exception as e:
+                        logging.error("Error during shutdown: %s", e)
+            else:
+                displayManager = PyInkDisplay(epd_type=merged["epd"])
+                logging.info("Fetching image...")
+                image = fetchImageFromUrl(merged["url"])
+                imageFetchStatus = "success"
+                if image is None:
+                    imageFetchStatus = "failure"
+                    logging.warning("Image fetch failed — using fallback.")
+                    notifyIfConfigured(
+                        appriseConfig,
+                        "pyInkDisplay: Image Fetch Failed",
+                        f"Failed to fetch image from {merged['url']}",
+                    )
+                    image = fetchFallbackImage(
+                        fallback_file=fallbackFile, iotd_config=iotdConfig
+                    )
+                logging.info("Displaying on EPD...")
+                displayManager.displayImage(image)
+                logging.info("EPD updated.")
+
+                try:
+                    batteryLevel = alarmManager.getBatteryLevel()
+                except Exception:
+                    pass  # keep startup value
+
+                telemetry = {
+                    "battery_level": batteryLevel,
+                    "last_update_time": datetime.now(timezone.utc).isoformat(),
+                    "image_fetch_status": imageFetchStatus,
+                    "power_mode": powerMode,
+                    "software_version": getCurrentTag() or "unknown",
+                    "update_available": False,
+                }
+
+                if mqttConfig:
+                    publishHaTelemetry(mqttConfig, telemetry)
+
+                batteryThreshold = (
+                    appriseConfig.get("battery_alert_threshold", 0)
+                    if appriseConfig
+                    else 0
+                )
+                if (
+                    batteryLevel is not None
+                    and batteryThreshold
+                    and batteryLevel < batteryThreshold
+                ):
+                    notifyIfConfigured(
+                        appriseConfig,
+                        "pyInkDisplay: Low Battery",
+                        f"Battery level is {batteryLevel}% (threshold: {batteryThreshold}%)",
+                    )
+
+                logging.info("PiSugar is on battery. Running one-shot battery mode.")
+                runBatteryMode(
+                    alarmManager,
+                    merged["alarmMinutes"],
+                    mqttConfig,
+                    merged["noShutdown"],
+                )
 
     except (EPDNotFoundError, RuntimeError) as e:
         logging.error("EPD display error: %s", e)
@@ -543,6 +547,7 @@ def pyInkPictureFrame():
 
 __all__ = [
     "pyInkPictureFrame",
+    "continuousEpdUpdateLoop",
     "runBatteryMode",
     "isInQuietHours",
     "secondsUntilQuietEnd",
