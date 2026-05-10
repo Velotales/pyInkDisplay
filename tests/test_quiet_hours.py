@@ -86,8 +86,8 @@ def test_secondsUntilQuietEnd_before_midnight():
 # --- integration: skip display during quiet hours ---
 
 
-def test_pyInkPictureFrame_quiet_hours_usb_sleeps_in_process():
-    """On USB power during quiet hours: sleep in-process only — no RTC alarm, no shutdown."""
+def test_pyInkPictureFrame_quiet_hours_usb_sleeps_then_restarts():
+    """On USB power during quiet hours: sleep in-process, then restart service when done."""
     mock_alarm = MagicMock()
     mock_alarm.isSugarPowered.return_value = True  # USB
 
@@ -121,7 +121,9 @@ def test_pyInkPictureFrame_quiet_hours_usb_sleeps_in_process():
         "pyinkdisplay.pyInkPictureFrame.time.sleep"
     ) as mock_sleep, patch(
         "pyinkdisplay.pyInkPictureFrame.subprocess.run"
-    ) as mock_run:
+    ) as mock_run, patch(
+        "pyinkdisplay.pyInkPictureFrame.restartService"
+    ) as mock_restart:
 
         mock_args.return_value.config = "config.yaml"
         pyInkPictureFrame()
@@ -130,6 +132,7 @@ def test_pyInkPictureFrame_quiet_hours_usb_sleeps_in_process():
     mock_alarm.setAlarm.assert_not_called()
     mock_sleep.assert_called_once_with(28800)
     mock_run.assert_not_called()
+    mock_restart.assert_called_once()
 
 
 def test_pyInkPictureFrame_quiet_hours_battery_shuts_down():

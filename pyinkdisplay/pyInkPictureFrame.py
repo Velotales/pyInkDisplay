@@ -417,6 +417,7 @@ def pyInkPictureFrame():
             elif not merged.get("noShutdown"):
                 logging.info("USB power — sleeping in process until quiet hours end.")
                 time.sleep(sleep_seconds)
+                restartService()
             return
 
         displayManager = PyInkDisplay(epd_type=merged["epd"])
