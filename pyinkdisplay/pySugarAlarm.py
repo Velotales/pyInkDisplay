@@ -224,6 +224,12 @@ class PiSugarAlarm:
             initialRtcTime (datetime): The RTC time before synchronization.
         """
         logger.info("Syncing RTC clock to Pi...")
+        if datetime.now().year < 2024:
+            logger.warning(
+                "System clock looks wrong (year < 2024). "
+                "Skipping RTC sync — using existing RTC time."
+            )
+            return initialRtcTime
         try:
             assert self.pisugar is not None
             self.pisugar.rtc_pi2rtc()

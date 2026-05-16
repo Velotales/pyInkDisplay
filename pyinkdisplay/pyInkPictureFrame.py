@@ -200,7 +200,10 @@ def publishBatteryLevel(alarmManager, mqttConfig):
         logging.warning("No MQTT config provided, skipping battery publish.")
         return
     try:
-        client = mqtt.Client(protocol=mqtt.MQTTv5)
+        client = mqtt.Client(
+            callback_api_version=mqtt.CallbackAPIVersion.VERSION2,
+            protocol=mqtt.MQTTv5,
+        )
         if mqttConfig.get("username"):
             client.username_pw_set(
                 mqttConfig.get("username"), mqttConfig.get("password", "")
@@ -209,13 +212,18 @@ def publishBatteryLevel(alarmManager, mqttConfig):
             mqttConfig.get("host", "localhost"), int(mqttConfig.get("port", 1883)), 60
         )
         topic = mqttConfig.get("topic", "homeassistant/sensor/pisugar_battery/state")
-        client.publish(topic, str(batteryLevel), retain=True)
-        client.disconnect()
-        logging.info(
-            "Published battery level %s%% to MQTT topic %s",
-            batteryLevel,
-            topic,
-        )
+        try:
+            client.publish(topic, str(batteryLevel), retain=True)
+            logging.info(
+                "Published battery level %s%% to MQTT topic %s",
+                batteryLevel,
+                topic,
+            )
+        finally:
+            try:
+                client.disconnect()
+            except Exception:
+                pass
     except Exception as e:
         logging.error("Failed to publish battery level to MQTT: %s", e)
 

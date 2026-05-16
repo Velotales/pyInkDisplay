@@ -69,11 +69,14 @@ def test_fetchInaturalistImage_returns_image_on_success():
     }
     mock_image = MagicMock()
 
-    with patch(
-        "pyinkdisplay.pyImageOfTheDay.requests.get", return_value=mock_api_response
-    ), patch(
-        "pyinkdisplay.pyImageOfTheDay.fetchImageFromUrl", return_value=mock_image
-    ) as mock_fetch:
+    with (
+        patch(
+            "pyinkdisplay.pyImageOfTheDay.requests.get", return_value=mock_api_response
+        ),
+        patch(
+            "pyinkdisplay.pyImageOfTheDay.fetchImageFromUrl", return_value=mock_image
+        ) as mock_fetch,
+    ):
         result = iotd._fetchInaturalistImage()
 
     mock_fetch.assert_called_once_with("https://inaturalist.org/photos/1/large.jpg")
@@ -129,11 +132,14 @@ def test_fetchNasaApodImage_returns_image_on_success():
     }
     mock_image = MagicMock()
 
-    with patch(
-        "pyinkdisplay.pyImageOfTheDay.requests.get", return_value=mock_api_response
-    ), patch(
-        "pyinkdisplay.pyImageOfTheDay.fetchImageFromUrl", return_value=mock_image
-    ) as mock_fetch:
+    with (
+        patch(
+            "pyinkdisplay.pyImageOfTheDay.requests.get", return_value=mock_api_response
+        ),
+        patch(
+            "pyinkdisplay.pyImageOfTheDay.fetchImageFromUrl", return_value=mock_image
+        ) as mock_fetch,
+    ):
         result = iotd._fetchNasaApodImage("DEMO_KEY")
 
     mock_fetch.assert_called_once_with("https://apod.nasa.gov/apod/image/today.jpg")

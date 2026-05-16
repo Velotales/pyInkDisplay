@@ -103,14 +103,10 @@ class PyInkDisplay:
             logger.error("EPD driver not loaded. Call loadDisplayDriver first.")
             raise RuntimeError("EPD driver not loaded.")
 
-        try:
-            logger.info("Image size: %s", image.size)
-            epd = self.epd
-            assert epd is not None
-            image = image.resize((epd.width, epd.height))
-        except Exception as e:
-            logger.error("Error resizing image: %s", e)
-            return
+        logger.info("Image size: %s", image.size)
+        epd = self.epd
+        assert epd is not None
+        image = image.resize((epd.width, epd.height))
 
         logger.info("Preparing display")
         epd.prepare()

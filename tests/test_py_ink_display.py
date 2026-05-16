@@ -94,17 +94,23 @@ def test_display_image_no_epd():
         display.displayImage(image)
 
 
-def test_display_image_resize_error():
-    """Test handling of resize errors."""
+def test_display_image_resize_error_propagates():
+    """A resize failure must propagate out of displayImage.
+
+    Previously the exception was swallowed and the caller could not tell
+    whether display succeeded — on battery this caused the device to set
+    the alarm and shut down with an unchanged frame.
+    """
     display = PyInkDisplay()
     display.epd = MagicMock()
 
     image = Image.new("RGB", (100, 100))
     image.resize = MagicMock(side_effect=Exception("Resize error"))
 
-    display.displayImage(image)
+    with pytest.raises(Exception, match="Resize error"):
+        display.displayImage(image)
 
-    # Since resize fails, the rest shouldn't be called
+    # The display should not have been written to
     display.epd.prepare.assert_not_called()
     display.epd.clear.assert_not_called()
     display.epd.display.assert_not_called()

@@ -104,9 +104,10 @@ def test_check_and_apply_update_skips_in_dev_mode(tmp_path):
     """Returns False immediately when dev mode marker is present."""
     marker = tmp_path / "dev_mode"
     marker.touch()
-    with patch("pyinkdisplay.pyUpdater.DEV_MODE_MARKER", marker), patch(
-        "pyinkdisplay.pyUpdater.getLatestTag"
-    ) as mock_latest:
+    with (
+        patch("pyinkdisplay.pyUpdater.DEV_MODE_MARKER", marker),
+        patch("pyinkdisplay.pyUpdater.getLatestTag") as mock_latest,
+    ):
         result = checkAndApplyUpdate()
     assert result is False
     mock_latest.assert_not_called()
@@ -115,13 +116,13 @@ def test_check_and_apply_update_skips_in_dev_mode(tmp_path):
 def test_check_and_apply_update_applies_when_newer_tag_available(tmp_path):
     """Applies update and restarts service when a newer tag is available."""
     marker = tmp_path / "dev_mode"  # does not exist
-    with patch("pyinkdisplay.pyUpdater.DEV_MODE_MARKER", marker), patch(
-        "pyinkdisplay.pyUpdater.getCurrentTag", return_value="v1.0.0"
-    ), patch("pyinkdisplay.pyUpdater.getLatestTag", return_value="v2.0.0"), patch(
-        "pyinkdisplay.pyUpdater.applyUpdate", return_value=True
-    ) as mock_apply, patch(
-        "pyinkdisplay.pyUpdater.restartService"
-    ) as mock_restart:
+    with (
+        patch("pyinkdisplay.pyUpdater.DEV_MODE_MARKER", marker),
+        patch("pyinkdisplay.pyUpdater.getCurrentTag", return_value="v1.0.0"),
+        patch("pyinkdisplay.pyUpdater.getLatestTag", return_value="v2.0.0"),
+        patch("pyinkdisplay.pyUpdater.applyUpdate", return_value=True) as mock_apply,
+        patch("pyinkdisplay.pyUpdater.restartService") as mock_restart,
+    ):
         result = checkAndApplyUpdate()
     assert result is True
     mock_apply.assert_called_once_with("v2.0.0")
@@ -131,11 +132,12 @@ def test_check_and_apply_update_applies_when_newer_tag_available(tmp_path):
 def test_check_and_apply_update_skips_when_up_to_date(tmp_path):
     """Returns False when already on the latest tag."""
     marker = tmp_path / "dev_mode"  # does not exist
-    with patch("pyinkdisplay.pyUpdater.DEV_MODE_MARKER", marker), patch(
-        "pyinkdisplay.pyUpdater.getCurrentTag", return_value="v2.0.0"
-    ), patch("pyinkdisplay.pyUpdater.getLatestTag", return_value="v2.0.0"), patch(
-        "pyinkdisplay.pyUpdater.applyUpdate"
-    ) as mock_apply:
+    with (
+        patch("pyinkdisplay.pyUpdater.DEV_MODE_MARKER", marker),
+        patch("pyinkdisplay.pyUpdater.getCurrentTag", return_value="v2.0.0"),
+        patch("pyinkdisplay.pyUpdater.getLatestTag", return_value="v2.0.0"),
+        patch("pyinkdisplay.pyUpdater.applyUpdate") as mock_apply,
+    ):
         result = checkAndApplyUpdate()
     assert result is False
     mock_apply.assert_not_called()
@@ -144,13 +146,13 @@ def test_check_and_apply_update_skips_when_up_to_date(tmp_path):
 def test_check_and_apply_update_returns_false_when_apply_fails(tmp_path):
     """Returns False when applyUpdate fails even if a newer tag is available."""
     marker = tmp_path / "dev_mode"  # does not exist
-    with patch("pyinkdisplay.pyUpdater.DEV_MODE_MARKER", marker), patch(
-        "pyinkdisplay.pyUpdater.getCurrentTag", return_value="v1.0.0"
-    ), patch("pyinkdisplay.pyUpdater.getLatestTag", return_value="v2.0.0"), patch(
-        "pyinkdisplay.pyUpdater.applyUpdate", return_value=False
-    ) as mock_apply, patch(
-        "pyinkdisplay.pyUpdater.restartService"
-    ) as mock_restart:
+    with (
+        patch("pyinkdisplay.pyUpdater.DEV_MODE_MARKER", marker),
+        patch("pyinkdisplay.pyUpdater.getCurrentTag", return_value="v1.0.0"),
+        patch("pyinkdisplay.pyUpdater.getLatestTag", return_value="v2.0.0"),
+        patch("pyinkdisplay.pyUpdater.applyUpdate", return_value=False) as mock_apply,
+        patch("pyinkdisplay.pyUpdater.restartService") as mock_restart,
+    ):
         result = checkAndApplyUpdate()
     assert result is False
     mock_apply.assert_called_once_with("v2.0.0")
@@ -160,11 +162,12 @@ def test_check_and_apply_update_returns_false_when_apply_fails(tmp_path):
 def test_check_and_apply_update_returns_false_when_no_latest_tag(tmp_path):
     """Returns False when getLatestTag returns None."""
     marker = tmp_path / "dev_mode"  # does not exist
-    with patch("pyinkdisplay.pyUpdater.DEV_MODE_MARKER", marker), patch(
-        "pyinkdisplay.pyUpdater.getCurrentTag", return_value="v1.0.0"
-    ), patch("pyinkdisplay.pyUpdater.getLatestTag", return_value=None), patch(
-        "pyinkdisplay.pyUpdater.applyUpdate"
-    ) as mock_apply:
+    with (
+        patch("pyinkdisplay.pyUpdater.DEV_MODE_MARKER", marker),
+        patch("pyinkdisplay.pyUpdater.getCurrentTag", return_value="v1.0.0"),
+        patch("pyinkdisplay.pyUpdater.getLatestTag", return_value=None),
+        patch("pyinkdisplay.pyUpdater.applyUpdate") as mock_apply,
+    ):
         result = checkAndApplyUpdate()
     assert result is False
     mock_apply.assert_not_called()

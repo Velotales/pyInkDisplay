@@ -1,7 +1,13 @@
 import json
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, call, patch
 
-from pyinkdisplay.pyMqttDiscovery import publishHaTelemetry, publishHaTelemetryDiscovery
+import pytest
+
+from pyinkdisplay.pyMqttDiscovery import (
+    publishHaBatteryDiscovery,
+    publishHaTelemetry,
+    publishHaTelemetryDiscovery,
+)
 
 MQTT_CONFIG = {"host": "localhost", "port": 1883}
 
@@ -50,3 +56,33 @@ def test_publishHaTelemetryDiscovery_publishes_discovery_for_all_sensors():
         assert any(
             sensor in topic for topic in publish_topics
         ), f"Missing discovery for {sensor}"
+
+
+def test_publishHaTelemetry_disconnects_even_when_publish_raises():
+    """disconnect must be called even if publish raises an exception.
+
+    Without try/finally, a publish failure leaks the MQTT connection.
+    On USB mode (hundreds of iterations/day) leaked connections accumulate.
+    """
+    with patch("pyinkdisplay.pyMqttDiscovery.mqtt.Client") as mock_client_cls:
+        mock_client = MagicMock()
+        mock_client_cls.return_value = mock_client
+        mock_client.publish.side_effect = RuntimeError("broker gone")
+
+        # The function swallows exceptions — we just verify disconnect was still called
+        publishHaTelemetry(MQTT_CONFIG, {"battery_level": 50})
+
+    mock_client.disconnect.assert_called_once()
+
+
+def test_publishHaBatteryDiscovery_disconnects_even_when_publish_raises():
+    """disconnect must be called in publishHaBatteryDiscovery even if publish raises."""
+    with patch("pyinkdisplay.pyMqttDiscovery.mqtt.Client") as mock_client_cls:
+        mock_client = MagicMock()
+        mock_client_cls.return_value = mock_client
+        mock_client.publish.side_effect = RuntimeError("broker gone")
+
+        # The function catches all exceptions internally — we just verify disconnect ran
+        publishHaBatteryDiscovery(MQTT_CONFIG)
+
+    mock_client.disconnect.assert_called_once()

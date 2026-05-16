@@ -34,9 +34,11 @@ import pyinkdisplay.pyUtils as utils
 
 def test_fetchImageFromUrl_success():
     """Test successful image download from URL."""
-    with patch("pyinkdisplay.pyUtils.requests.get") as mock_get, patch(
-        "pyinkdisplay.pyUtils.BytesIO"
-    ) as mock_bytesio, patch("pyinkdisplay.pyUtils.Image.open") as mock_image_open:
+    with (
+        patch("pyinkdisplay.pyUtils.requests.get") as mock_get,
+        patch("pyinkdisplay.pyUtils.BytesIO") as mock_bytesio,
+        patch("pyinkdisplay.pyUtils.Image.open") as mock_image_open,
+    ):
         mock_response = MagicMock()
         mock_response.content = b"fake image data"
         mock_response.raise_for_status = MagicMock()
@@ -69,10 +71,13 @@ def test_fetchImageFromUrl_failure():
 
 def test_fetchImageFromUrl_retries_on_request_error():
     """requests.get is called up to 3 times on RequestException."""
-    with patch(
-        "pyinkdisplay.pyUtils.requests.get",
-        side_effect=req.exceptions.ConnectionError("refused"),
-    ) as mock_get, patch("tenacity.nap.time.sleep"):
+    with (
+        patch(
+            "pyinkdisplay.pyUtils.requests.get",
+            side_effect=req.exceptions.ConnectionError("refused"),
+        ) as mock_get,
+        patch("tenacity.nap.time.sleep"),
+    ):
         result = utils.fetchImageFromUrl("http://example.com/image.jpg")
     assert result is None
     assert mock_get.call_count == 3
@@ -80,9 +85,10 @@ def test_fetchImageFromUrl_retries_on_request_error():
 
 def test_createDefaultImage():
     """Test creating a default fallback image."""
-    with patch("pyinkdisplay.pyUtils.Image.new") as mock_image_new, patch(
-        "pyinkdisplay.pyUtils.ImageDraw.Draw"
-    ) as mock_draw:
+    with (
+        patch("pyinkdisplay.pyUtils.Image.new") as mock_image_new,
+        patch("pyinkdisplay.pyUtils.ImageDraw.Draw") as mock_draw,
+    ):
         mock_image = MagicMock()
         mock_image_new.return_value = mock_image
 
@@ -112,9 +118,10 @@ def test_fetchFallbackImage_uses_image_of_the_day_first():
 def test_fetchFallbackImage_loads_from_disk_when_iotd_fails():
     """Falls through to disk image when image-of-the-day returns None."""
     mock_image = MagicMock()
-    with patch(
-        "pyinkdisplay.pyImageOfTheDay.fetchImageOfTheDay", return_value=None
-    ), patch("pyinkdisplay.pyUtils.Image.open", return_value=mock_image):
+    with (
+        patch("pyinkdisplay.pyImageOfTheDay.fetchImageOfTheDay", return_value=None),
+        patch("pyinkdisplay.pyUtils.Image.open", return_value=mock_image),
+    ):
         result = utils.fetchFallbackImage(
             fallback_file="/some/image.png", iotd_config=None
         )
@@ -124,12 +131,10 @@ def test_fetchFallbackImage_loads_from_disk_when_iotd_fails():
 def test_fetchFallbackImage_uses_default_when_disk_load_fails():
     """Falls through to _createDefaultImage when disk load raises."""
     mock_image = MagicMock()
-    with patch(
-        "pyinkdisplay.pyImageOfTheDay.fetchImageOfTheDay", return_value=None
-    ), patch(
-        "pyinkdisplay.pyUtils.Image.open", side_effect=OSError("not found")
-    ), patch(
-        "pyinkdisplay.pyUtils._createDefaultImage", return_value=mock_image
+    with (
+        patch("pyinkdisplay.pyImageOfTheDay.fetchImageOfTheDay", return_value=None),
+        patch("pyinkdisplay.pyUtils.Image.open", side_effect=OSError("not found")),
+        patch("pyinkdisplay.pyUtils._createDefaultImage", return_value=mock_image),
     ):
         result = utils.fetchFallbackImage(
             fallback_file="/missing.png", iotd_config=None
@@ -140,8 +145,9 @@ def test_fetchFallbackImage_uses_default_when_disk_load_fails():
 def test_fetchFallbackImage_uses_default_when_nothing_configured():
     """Falls straight to _createDefaultImage when no fallback is configured."""
     mock_image = MagicMock()
-    with patch(
-        "pyinkdisplay.pyImageOfTheDay.fetchImageOfTheDay", return_value=None
-    ), patch("pyinkdisplay.pyUtils._createDefaultImage", return_value=mock_image):
+    with (
+        patch("pyinkdisplay.pyImageOfTheDay.fetchImageOfTheDay", return_value=None),
+        patch("pyinkdisplay.pyUtils._createDefaultImage", return_value=mock_image),
+    ):
         result = utils.fetchFallbackImage(fallback_file=None, iotd_config=None)
     assert result == mock_image

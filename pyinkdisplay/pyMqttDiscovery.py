@@ -49,7 +49,9 @@ def publishHaBatteryDiscovery(mqtt_config):
             "manufacturer": "PiSugar",
         },
     }
-    client = mqtt.Client(protocol=mqtt.MQTTv5)
+    client = mqtt.Client(
+        callback_api_version=mqtt.CallbackAPIVersion.VERSION2, protocol=mqtt.MQTTv5
+    )
     if mqtt_config.get("username"):
         client.username_pw_set(
             mqtt_config.get("username"), mqtt_config.get("password", "")
@@ -58,11 +60,18 @@ def publishHaBatteryDiscovery(mqtt_config):
         client.connect(
             mqtt_config.get("host", "localhost"), int(mqtt_config.get("port", 1883)), 60
         )
-        client.loop_start()
-        client.publish(DISCOVERY_TOPIC, json.dumps(payload), retain=True)
-        client.loop_stop()
-        client.disconnect()
-        logger.info("Published Home Assistant discovery message to %s", DISCOVERY_TOPIC)
+        try:
+            client.loop_start()
+            client.publish(DISCOVERY_TOPIC, json.dumps(payload), retain=True)
+            client.loop_stop()
+            logger.info(
+                "Published Home Assistant discovery message to %s", DISCOVERY_TOPIC
+            )
+        finally:
+            try:
+                client.disconnect()
+            except Exception:
+                pass
     except Exception as e:
         logger.error("Failed to publish discovery message: %s", e)
 
@@ -117,7 +126,9 @@ _DEVICE = {
 
 def _mqttClient(mqtt_config: dict):
     """Create and connect a paho MQTT client."""
-    client = mqtt.Client(protocol=mqtt.MQTTv5)
+    client = mqtt.Client(
+        callback_api_version=mqtt.CallbackAPIVersion.VERSION2, protocol=mqtt.MQTTv5
+    )
     if mqtt_config.get("username"):
         client.username_pw_set(mqtt_config["username"], mqtt_config.get("password", ""))
     client.connect(
@@ -135,22 +146,27 @@ def publishHaTelemetryDiscovery(mqtt_config: dict) -> None:
     """
     try:
         client = _mqttClient(mqtt_config)
-        client.loop_start()
-        for sensor in _TELEMETRY_SENSORS:
-            discovery_topic = f"homeassistant/sensor/{sensor['field']}/config"
-            payload = {
-                "name": sensor["name"],
-                "state_topic": STATE_TOPIC,
-                "value_template": (f"{{{{ value_json.{sensor['field']} }}}}"),
-                "unique_id": sensor["unique_id"],
-                "device": _DEVICE,
-            }
-            if sensor["device_class"]:
-                payload["device_class"] = sensor["device_class"]
-            client.publish(discovery_topic, json.dumps(payload), retain=True)
-        client.loop_stop()
-        client.disconnect()
-        logger.info("Published telemetry discovery messages.")
+        try:
+            client.loop_start()
+            for sensor in _TELEMETRY_SENSORS:
+                discovery_topic = f"homeassistant/sensor/{sensor['field']}/config"
+                payload = {
+                    "name": sensor["name"],
+                    "state_topic": STATE_TOPIC,
+                    "value_template": (f"{{{{ value_json.{sensor['field']} }}}}"),
+                    "unique_id": sensor["unique_id"],
+                    "device": _DEVICE,
+                }
+                if sensor["device_class"]:
+                    payload["device_class"] = sensor["device_class"]
+                client.publish(discovery_topic, json.dumps(payload), retain=True)
+            client.loop_stop()
+            logger.info("Published telemetry discovery messages.")
+        finally:
+            try:
+                client.disconnect()
+            except Exception:
+                pass
     except Exception as e:
         logger.error("Failed to publish telemetry discovery: %s", e)
 
@@ -166,10 +182,15 @@ def publishHaTelemetry(mqtt_config: dict, telemetry: dict) -> None:
     """
     try:
         client = _mqttClient(mqtt_config)
-        client.loop_start()
-        client.publish(STATE_TOPIC, json.dumps(telemetry), retain=True)
-        client.loop_stop()
-        client.disconnect()
-        logger.info("Published telemetry to %s", STATE_TOPIC)
+        try:
+            client.loop_start()
+            client.publish(STATE_TOPIC, json.dumps(telemetry), retain=True)
+            client.loop_stop()
+            logger.info("Published telemetry to %s", STATE_TOPIC)
+        finally:
+            try:
+                client.disconnect()
+            except Exception:
+                pass
     except Exception as e:
         logger.error("Failed to publish telemetry: %s", e)
