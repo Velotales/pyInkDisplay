@@ -314,6 +314,11 @@ class PiSugarAlarm:
             PiSugarConnectionError: If connection to PiSugar cannot be established.
             PiSugarError: If there's an error retrieving power status from PiSugar.
         """
+        # Discard any async event notifications (e.g. battery_power_plugged status
+        # pushes) that pisugar-server buffered since the last call. Without this reset
+        # the first read returns stale data, attempt 1 always fails, and the retry
+        # warning fires on every cycle — the same pattern as setAlarm().
+        self._resetConnection()
         lastException: Optional[Exception] = None
         for attempt in range(1, retries + 1):
             try:

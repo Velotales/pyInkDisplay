@@ -97,6 +97,48 @@ def test_set_alarm_does_not_block_on_network(mock_pisugar_server, mock_connect_t
 
 @patch("pyinkdisplay.pySugarAlarm.connect_tcp")
 @patch("pyinkdisplay.pySugarAlarm.PiSugarServer")
+def test_isSugarPowered_resets_connection_before_querying(
+    mock_pisugar_server, mock_connect_tcp
+):
+    """isSugarPowered must reset the TCP connection before querying.
+
+    pisugar-server pushes async event notifications (e.g. battery_power_plugged)
+    into the socket buffer between calls. Without a reset, the first read gets
+    stale event data ('Invalid request.') instead of the actual plugged status,
+    so attempt 1 always fails and the retry warning fires on every USB cycle.
+    """
+    mock_connection = MagicMock()
+    mock_event_connection = MagicMock()
+    mock_connect_tcp.return_value = (mock_connection, mock_event_connection)
+
+    mock_pisugar_instance = MagicMock()
+    mock_pisugar_server.return_value = mock_pisugar_instance
+    mock_pisugar_instance.get_battery_power_plugged.return_value = True
+
+    alarm = PiSugarAlarm()
+    call_order = []
+
+    original_reset = alarm._resetConnection
+
+    def tracked_reset():
+        call_order.append("reset")
+        original_reset()
+
+    def tracked_query():
+        call_order.append("query")
+        return True
+
+    alarm._resetConnection = tracked_reset
+    mock_pisugar_instance.get_battery_power_plugged.side_effect = tracked_query
+
+    alarm.isSugarPowered()
+
+    assert call_order[0] == "reset", "reset must be called before the first query"
+    assert "query" in call_order
+
+
+@patch("pyinkdisplay.pySugarAlarm.connect_tcp")
+@patch("pyinkdisplay.pySugarAlarm.PiSugarServer")
 def test_is_sugar_powered(mock_pisugar_server, mock_connect_tcp):
     """Test checking if PiSugar is powered."""
     # Mock connection
