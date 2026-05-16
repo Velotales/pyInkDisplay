@@ -19,8 +19,8 @@ PyYAML
 # For retries in image fetching
 tenacity
 
-# For MQTT support
-paho-mqtt
+# For MQTT support — v2+ required for CallbackAPIVersion
+paho-mqtt>=2.0.0
 
 # For Seq structured logging (optional)
 seqlog
