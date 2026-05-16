@@ -49,6 +49,8 @@ from .pyUpdater import (
     checkAndApplyUpdate,
     getCurrentTag,
     getLatestTag,
+    recordBootAttempt,
+    resetBootCounter,
     restartService,
 )
 from .pyUtils import fetchFallbackImage, fetchImageFromUrl
@@ -324,6 +326,11 @@ def continuousEpdUpdateLoop(
                 displayManager.displayImage(updatedImage)
                 logging.info("EPD updated.")
                 imageFetchStatus = "success"
+                # Successful display: mark this tag as the rollback target.
+                try:
+                    resetBootCounter()
+                except Exception as e:
+                    logging.error("resetBootCounter failed: %s", e)
             else:
                 logging.warning("Image fetch failed. Will retry after next interval.")
                 imageFetchStatus = "failure"
@@ -403,6 +410,15 @@ def pyInkPictureFrame():
 
     loggingConfig = config.get("logging", {}) if config else {}
     setupLogging(loggingConfig)
+
+    # Rollback watchdog: record this boot attempt BEFORE we touch the display
+    # or do any other heavy work. If the previous tag is in a crash-loop the
+    # watchdog will revert and restart us; the function does not raise.
+    try:
+        recordBootAttempt()
+    except Exception as e:
+        # Never let watchdog bookkeeping prevent the device from running.
+        logging.error("recordBootAttempt failed: %s", e)
 
     # Publish Home Assistant MQTT discovery if MQTT is configured
     if mqttConfig:
@@ -539,6 +555,11 @@ def pyInkPictureFrame():
                 logging.info("Displaying on EPD...")
                 displayManager.displayImage(image)
                 logging.info("EPD updated.")
+                # Successful display: mark this tag as the rollback target.
+                try:
+                    resetBootCounter()
+                except Exception as e:
+                    logging.error("resetBootCounter failed: %s", e)
 
                 try:
                     batteryLevel = alarmManager.getBatteryLevel()

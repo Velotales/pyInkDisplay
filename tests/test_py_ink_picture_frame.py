@@ -669,6 +669,8 @@ def test_pyInkPictureFrame_shuts_down_during_quiet_hours_on_battery():
         ),
         patch("pyinkdisplay.pyInkPictureFrame.setupLogging"),
         patch("pyinkdisplay.pyInkPictureFrame.getCurrentTag", return_value="v0.3.5"),
+        patch("pyinkdisplay.pyInkPictureFrame.recordBootAttempt", return_value=False),
+        patch("pyinkdisplay.pyInkPictureFrame.resetBootCounter"),
         patch("pyinkdisplay.pyInkPictureFrame.PiSugarAlarm") as mock_alarm_cls,
         patch("pyinkdisplay.pyInkPictureFrame.isInQuietHours", return_value=True),
         patch("pyinkdisplay.pyInkPictureFrame.secondsUntilQuietEnd", return_value=3600),
@@ -703,6 +705,8 @@ def test_pyInkPictureFrame_skips_shutdown_during_quiet_hours_when_noShutdown():
         ),
         patch("pyinkdisplay.pyInkPictureFrame.setupLogging"),
         patch("pyinkdisplay.pyInkPictureFrame.getCurrentTag", return_value="v0.3.5"),
+        patch("pyinkdisplay.pyInkPictureFrame.recordBootAttempt", return_value=False),
+        patch("pyinkdisplay.pyInkPictureFrame.resetBootCounter"),
         patch("pyinkdisplay.pyInkPictureFrame.PiSugarAlarm") as mock_alarm_cls,
         patch("pyinkdisplay.pyInkPictureFrame.isInQuietHours", return_value=True),
         patch("pyinkdisplay.pyInkPictureFrame.secondsUntilQuietEnd", return_value=3600),
@@ -743,6 +747,8 @@ def test_pyInkPictureFrame_battery_epd_error_sets_alarm_and_shuts_down():
         ),
         patch("pyinkdisplay.pyInkPictureFrame.setupLogging"),
         patch("pyinkdisplay.pyInkPictureFrame.getCurrentTag", return_value="v0.3.6"),
+        patch("pyinkdisplay.pyInkPictureFrame.recordBootAttempt", return_value=False),
+        patch("pyinkdisplay.pyInkPictureFrame.resetBootCounter"),
         patch(
             "pyinkdisplay.pyInkPictureFrame.PyInkDisplay",
             side_effect=EPDNotFoundError("missing driver"),
@@ -779,3 +785,82 @@ def test_continuousEpdUpdateLoop_does_not_call_setAlarm():
 
     alarm.setAlarm.assert_not_called()
     assert result is True
+
+
+def test_pyInkPictureFrame_records_boot_attempt_on_startup():
+    """recordBootAttempt must run early so the rollback watchdog can detect
+    crash-loops on a broken release before we ever touch the display."""
+    with (
+        patch("pyinkdisplay.pyInkPictureFrame.parseArguments") as mock_args,
+        patch("pyinkdisplay.pyInkPictureFrame.loadConfig", return_value={}),
+        patch(
+            "pyinkdisplay.pyInkPictureFrame.mergeArgsAndConfig",
+            return_value={
+                "epd": "waveshare_epd.epd7in3f",
+                "url": "http://example.com",
+                "alarmMinutes": 20,
+                "noShutdown": True,
+                "logging": None,
+            },
+        ),
+        patch("pyinkdisplay.pyInkPictureFrame.setupLogging"),
+        patch("pyinkdisplay.pyInkPictureFrame.PyInkDisplay"),
+        patch(
+            "pyinkdisplay.pyInkPictureFrame.fetchImageFromUrl", return_value=MagicMock()
+        ),
+        patch("pyinkdisplay.pyInkPictureFrame.PiSugarAlarm") as mock_alarm_cls,
+        patch("pyinkdisplay.pyInkPictureFrame.checkAndApplyUpdate", return_value=False),
+        patch("pyinkdisplay.pyInkPictureFrame.runBatteryMode"),
+        patch(
+            "pyinkdisplay.pyInkPictureFrame.continuousEpdUpdateLoop", return_value=False
+        ),
+        patch("pyinkdisplay.pyInkPictureFrame.recordBootAttempt") as mock_record,
+    ):
+        mock_args.return_value.config = None
+        mock_alarm = MagicMock()
+        mock_alarm.isSugarPowered.return_value = True
+        mock_alarm_cls.return_value = mock_alarm
+
+        pyInkPictureFrame()
+
+    mock_record.assert_called_once()
+
+
+def test_pyInkPictureFrame_resets_boot_counter_after_successful_battery_display():
+    """resetBootCounter runs after a successful displayImage() so the
+    current tag is recorded as the rollback target for future failures."""
+    with (
+        patch("pyinkdisplay.pyInkPictureFrame.parseArguments") as mock_args,
+        patch("pyinkdisplay.pyInkPictureFrame.loadConfig", return_value={}),
+        patch(
+            "pyinkdisplay.pyInkPictureFrame.mergeArgsAndConfig",
+            return_value={
+                "epd": "waveshare_epd.epd7in3f",
+                "url": "http://example.com",
+                "alarmMinutes": 20,
+                "noShutdown": True,
+                "logging": None,
+            },
+        ),
+        patch("pyinkdisplay.pyInkPictureFrame.setupLogging"),
+        patch("pyinkdisplay.pyInkPictureFrame.PyInkDisplay") as mock_display_cls,
+        patch(
+            "pyinkdisplay.pyInkPictureFrame.fetchImageFromUrl", return_value=MagicMock()
+        ),
+        patch("pyinkdisplay.pyInkPictureFrame.PiSugarAlarm") as mock_alarm_cls,
+        patch("pyinkdisplay.pyInkPictureFrame.runBatteryMode"),
+        patch("pyinkdisplay.pyInkPictureFrame.recordBootAttempt", return_value=False),
+        patch("pyinkdisplay.pyInkPictureFrame.resetBootCounter") as mock_reset,
+    ):
+        mock_args.return_value.config = None
+        mock_alarm = MagicMock()
+        # Battery mode triggers the single-shot display path.
+        mock_alarm.isSugarPowered.return_value = False
+        mock_alarm_cls.return_value = mock_alarm
+        mock_display = MagicMock()
+        mock_display_cls.return_value = mock_display
+
+        pyInkPictureFrame()
+
+    mock_display.displayImage.assert_called_once()
+    mock_reset.assert_called_once()
