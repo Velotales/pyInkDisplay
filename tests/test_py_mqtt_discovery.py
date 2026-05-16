@@ -1,7 +1,5 @@
 import json
-from unittest.mock import MagicMock, call, patch
-
-import pytest
+from unittest.mock import MagicMock, patch
 
 from pyinkdisplay.pyMqttDiscovery import (
     publishHaBatteryDiscovery,
