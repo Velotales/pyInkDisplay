@@ -66,6 +66,37 @@ def test_set_alarm(mock_pisugar_server, mock_connect_tcp):
 
 @patch("pyinkdisplay.pySugarAlarm.connect_tcp")
 @patch("pyinkdisplay.pySugarAlarm.PiSugarServer")
+def test_set_alarm_does_not_block_on_network(mock_pisugar_server, mock_connect_tcp):
+    """setAlarm must not wait for network connectivity.
+
+    rtc_alarm_set is a local socket call to pisugar-server. If the device
+    wakes with no internet, a `while not _isOnline(): sleep(5)` loop would
+    leave the Pi powered on indefinitely and drain the battery.
+    """
+    # Mock connection
+    mock_connection = MagicMock()
+    mock_event_connection = MagicMock()
+    mock_connect_tcp.return_value = (mock_connection, mock_event_connection)
+
+    # Mock PiSugarServer — RTC calls succeed, alarm-set succeeds
+    mock_pisugar_instance = MagicMock()
+    mock_pisugar_server.return_value = mock_pisugar_instance
+    mock_pisugar_instance.get_rtc_time.return_value = MagicMock()
+    mock_pisugar_instance.rtc_pi2rtc = MagicMock()
+
+    alarm = PiSugarAlarm()
+
+    # Patch _isOnline to always return False — if setAlarm consults it, the
+    # old code would loop forever. We assert it is never called.
+    with patch.object(PiSugarAlarm, "_isOnline", return_value=False) as mock_online:
+        alarm.setAlarm(secondsInFuture=60)
+
+    mock_online.assert_not_called()
+    mock_pisugar_instance.rtc_alarm_set.assert_called_once()
+
+
+@patch("pyinkdisplay.pySugarAlarm.connect_tcp")
+@patch("pyinkdisplay.pySugarAlarm.PiSugarServer")
 def test_is_sugar_powered(mock_pisugar_server, mock_connect_tcp):
     """Test checking if PiSugar is powered."""
     # Mock connection

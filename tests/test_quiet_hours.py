@@ -112,6 +112,58 @@ def test_continuousEpdUpdateLoop_skips_display_during_quiet_hours():
     mock_display.displayImage.assert_not_called()
 
 
+def test_pyInkPictureFrame_quiet_hours_battery_falls_back_when_setAlarm_fails():
+    """If setAlarm fails on the quiet-hours wake duration, fall back to
+    alarmMinutes and still shut down.
+
+    Without this, an alarm failure during quiet hours would propagate to the
+    outer handler and exit without shutting down — battery drains to zero.
+    """
+    mock_alarm = MagicMock()
+    mock_alarm.isSugarPowered.return_value = False  # battery
+
+    # First call (quiet-hours wake) raises; fallback (alarmMinutes * 60) succeeds.
+    mock_alarm.setAlarm.side_effect = [RuntimeError("pisugar not reachable"), None]
+
+    with patch("pyinkdisplay.pyInkPictureFrame.parseArguments") as mock_args, patch(
+        "pyinkdisplay.pyInkPictureFrame.loadConfig",
+        return_value={"quiet_hours": {"start": "22:00", "end": "07:00"}},
+    ), patch(
+        "pyinkdisplay.pyInkPictureFrame.mergeArgsAndConfig",
+        return_value={
+            "epd": "waveshare_epd.epd7in3f",
+            "url": "http://example.com",
+            "alarmMinutes": 30,
+            "noShutdown": False,
+            "logging": None,
+        },
+    ), patch(
+        "pyinkdisplay.pyInkPictureFrame.setupLogging"
+    ), patch(
+        "pyinkdisplay.pyInkPictureFrame.PyInkDisplay"
+    ), patch(
+        "pyinkdisplay.pyInkPictureFrame.PiSugarAlarm", return_value=mock_alarm
+    ), patch(
+        "pyinkdisplay.pyInkPictureFrame.isInQuietHours", return_value=True
+    ), patch(
+        "pyinkdisplay.pyInkPictureFrame.secondsUntilQuietEnd", return_value=28800
+    ), patch(
+        "pyinkdisplay.pyInkPictureFrame.getCurrentTag", return_value="v0.3.6"
+    ), patch(
+        "pyinkdisplay.pyInkPictureFrame.subprocess.run"
+    ) as mock_run:
+
+        mock_args.return_value.config = "config.yaml"
+        pyInkPictureFrame()
+
+    # First setAlarm with quiet-end seconds, second with alarmMinutes fallback
+    assert mock_alarm.setAlarm.call_count == 2
+    first_call, second_call = mock_alarm.setAlarm.call_args_list
+    assert first_call.kwargs == {"secondsInFuture": 28800}
+    assert second_call.kwargs == {"secondsInFuture": 30 * 60}
+    mock_run.assert_called_once_with(["sudo", "shutdown", "now"], check=True)
+
+
 def test_pyInkPictureFrame_quiet_hours_battery_shuts_down():
     """On battery during quiet hours: set alarm and shut down immediately."""
     mock_alarm = MagicMock()

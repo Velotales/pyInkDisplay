@@ -27,6 +27,9 @@ Unit tests for pyInkPictureFrame.py
 
 from unittest.mock import MagicMock, patch
 
+import pytest
+
+from pyinkdisplay.pyInkDisplay import EPDNotFoundError
 from pyinkdisplay.pyInkPictureFrame import (
     continuousEpdUpdateLoop,
     loadConfig,
@@ -82,6 +85,25 @@ def test_mergeArgsAndConfig():
 
     assert result["url"] == "http://example.com"  # Args take precedence
     assert result["alarmMinutes"] == 60  # Correct key
+
+
+def test_mergeArgsAndConfig_noShutdown_true_in_config_only():
+    """argparse `store_true` defaults to False (not None) — so a bare
+    `noShutdown: true` in the YAML config must still merge to True.
+    The previous `argVal if argVal is not None else bool(configVal)` guard
+    swallowed the config value because False is not None.
+    """
+    args = MagicMock()
+    args.url = "http://example.com"
+    args.alarmMinutes = None
+    args.epd = None
+    args.noShutdown = False  # argparse store_true default
+
+    config = {"noShutdown": True}
+
+    result = mergeArgsAndConfig(args, config)
+
+    assert result["noShutdown"] is True
 
 
 def test_runBatteryMode_sets_alarm_and_shuts_down():
@@ -723,6 +745,48 @@ def test_pyInkPictureFrame_skips_shutdown_during_quiet_hours_when_noShutdown():
     mock_alarm.setAlarm.assert_called_once_with(secondsInFuture=3600)
     mock_run.assert_not_called()
     mock_sleep.assert_not_called()
+
+
+def test_pyInkPictureFrame_battery_epd_error_sets_alarm_and_shuts_down():
+    """On battery, an EPDNotFoundError must still set the RTC alarm and shut down.
+
+    Without this safety net the Pi would stay powered after an EPD error and
+    drain the battery to zero.
+    """
+    with patch("pyinkdisplay.pyInkPictureFrame.parseArguments") as mock_args, patch(
+        "pyinkdisplay.pyInkPictureFrame.loadConfig", return_value={}
+    ), patch(
+        "pyinkdisplay.pyInkPictureFrame.mergeArgsAndConfig",
+        return_value={
+            "epd": "waveshare_epd.epd7in3f",
+            "url": "http://example.com",
+            "alarmMinutes": 20,
+            "noShutdown": False,
+            "logging": None,
+        },
+    ), patch(
+        "pyinkdisplay.pyInkPictureFrame.setupLogging"
+    ), patch(
+        "pyinkdisplay.pyInkPictureFrame.getCurrentTag", return_value="v0.3.6"
+    ), patch(
+        "pyinkdisplay.pyInkPictureFrame.PyInkDisplay",
+        side_effect=EPDNotFoundError("missing driver"),
+    ), patch(
+        "pyinkdisplay.pyInkPictureFrame.PiSugarAlarm"
+    ) as mock_alarm_cls, patch(
+        "pyinkdisplay.pyInkPictureFrame.subprocess.run"
+    ) as mock_run:
+
+        mock_args.return_value.config = None
+        mock_alarm = MagicMock()
+        mock_alarm.isSugarPowered.return_value = False  # battery
+        mock_alarm_cls.return_value = mock_alarm
+
+        with pytest.raises(SystemExit):
+            pyInkPictureFrame()
+
+    mock_alarm.setAlarm.assert_called_once_with(secondsInFuture=20 * 60)
+    mock_run.assert_called_once_with(["sudo", "shutdown", "now"], check=True)
 
 
 def test_continuousEpdUpdateLoop_does_not_call_setAlarm():

@@ -358,16 +358,9 @@ class PiSugarAlarm:
         # last pisugar call (e.g. battery_power_plugged events that would desync RTC reads).
         self._resetConnection()
 
-        # 1. Check network connectivity
-        logger.info("Checking network connectivity...")
-        while not self._isOnline(self.pingUrl):
-            current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            logger.error(
-                "%s - Failed test to %s, waiting for connectivity",
-                current_time,
-                self.pingUrl,
-            )
-            time.sleep(5)
+        # NOTE: rtc_alarm_set is a local socket call to pisugar-server — no
+        # network is required. A previous version waited for internet here,
+        # which could trap the device awake on battery if Wi-Fi was down.
 
         # Connect and read initial RTC time, retrying if the connection handshake
         # produces noise (pisugar-server emits initial status lines on connect that

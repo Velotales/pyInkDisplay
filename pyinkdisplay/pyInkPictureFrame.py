@@ -170,7 +170,10 @@ def mergeArgsAndConfig(args, config):
         argVal = getattr(args, arg, None)
         configVal = config.get(configKey)
         if arg == "noShutdown":
-            merged[arg] = argVal if argVal is not None else bool(configVal)
+            # argparse store_true returns False when absent (not None), so the
+            # usual "argVal if not None else config" guard would always pick
+            # the False CLI default. OR the two so either source can enable it.
+            merged[arg] = bool(argVal) or bool(configVal)
         elif arg == "alarmMinutes":
             merged[arg] = (
                 argVal
@@ -215,6 +218,23 @@ def publishBatteryLevel(alarmManager, mqttConfig):
         )
     except Exception as e:
         logging.error("Failed to publish battery level to MQTT: %s", e)
+
+
+def _emergencyBatteryShutdown(alarmManager, alarmMinutes):
+    """Best-effort: set the RTC alarm and power off, swallowing any errors.
+
+    Used from exception paths on battery to ensure the Pi does not stay
+    powered on after a fatal error — that would drain the battery to zero
+    and potentially prevent boot.
+    """
+    try:
+        alarmManager.setAlarm(secondsInFuture=alarmMinutes * 60)
+    except Exception as e:
+        logging.error("Emergency: failed to set RTC alarm before shutdown: %s", e)
+    try:
+        subprocess.run(["sudo", "shutdown", "now"], check=True)
+    except Exception as e:
+        logging.error("Emergency: shutdown command failed: %s", e)
 
 
 def runBatteryMode(alarmManager, alarmMinutes, mqttConfig, noShutdown):
@@ -388,6 +408,7 @@ def pyInkPictureFrame():
         logging.error("Image URL must be specified via --url or in the config file.")
         sys.exit(1)
 
+    powerMode = "battery"  # Conservative default: prefer shutdown on early failure.
     try:
         alarmManager = PiSugarAlarm()
         powerMode = "usb" if alarmManager.isSugarPowered() else "battery"
@@ -464,7 +485,28 @@ def pyInkPictureFrame():
                     wake_time.strftime("%H:%M"),
                     sleep_seconds // 60,
                 )
-                alarmManager.setAlarm(secondsInFuture=sleep_seconds)
+                try:
+                    alarmManager.setAlarm(secondsInFuture=sleep_seconds)
+                except Exception as e:
+                    logging.error(
+                        "Failed to set quiet-hours wake alarm (%s). "
+                        "Falling back to normal interval (%d min) so the "
+                        "device still wakes.",
+                        e,
+                        merged["alarmMinutes"],
+                    )
+                    try:
+                        alarmManager.setAlarm(
+                            secondsInFuture=merged["alarmMinutes"] * 60
+                        )
+                    except Exception as e2:
+                        logging.error(
+                            "Fallback alarm also failed: %s. "
+                            "Shutting down without a wake alarm.",
+                            e2,
+                        )
+                # Shut down regardless of alarm success — staying awake on
+                # battery drains to zero.
                 if not merged.get("noShutdown"):
                     try:
                         subprocess.run(["sudo", "shutdown", "now"], check=True)
@@ -534,10 +576,14 @@ def pyInkPictureFrame():
     except (EPDNotFoundError, RuntimeError) as e:
         logging.error("EPD display error: %s", e)
         notifyIfConfigured(appriseConfig, "pyInkDisplay: EPD Error", str(e))
+        if powerMode == "battery" and alarmManager is not None:
+            _emergencyBatteryShutdown(alarmManager, merged["alarmMinutes"])
         sys.exit(1)
     except Exception as e:
         logging.error("An unexpected error occurred during EPD display: %s", e)
         notifyIfConfigured(appriseConfig, "pyInkDisplay: Unexpected Error", str(e))
+        if powerMode == "battery" and alarmManager is not None:
+            _emergencyBatteryShutdown(alarmManager, merged["alarmMinutes"])
         sys.exit(1)
     finally:
         if displayManager:
