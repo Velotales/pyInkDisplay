@@ -58,7 +58,7 @@ def _defaultBootStatePath() -> Path:
         _PRIMARY_BOOT_STATE_PATH.parent.mkdir(parents=True, exist_ok=True)
         if os.access(_PRIMARY_BOOT_STATE_PATH.parent, os.W_OK):
             return _PRIMARY_BOOT_STATE_PATH
-    except (OSError, PermissionError):
+    except OSError:
         pass
     return _FALLBACK_BOOT_STATE_PATH
 
@@ -67,7 +67,7 @@ def _readBootState(state_path: Path) -> dict:
     """Read JSON boot state; return empty dict on any error."""
     try:
         return json.loads(state_path.read_text())
-    except (FileNotFoundError, json.JSONDecodeError, OSError) as e:
+    except (json.JSONDecodeError, OSError) as e:
         if not isinstance(e, FileNotFoundError):
             logger.warning(
                 "Boot-attempt state file %s unreadable (%s) — resetting.",
