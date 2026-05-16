@@ -150,6 +150,10 @@ def test_pyInkPictureFrame_quiet_hours_battery_falls_back_when_setAlarm_fails():
     ), patch(
         "pyinkdisplay.pyInkPictureFrame.getCurrentTag", return_value="v0.3.6"
     ), patch(
+        "pyinkdisplay.pyInkPictureFrame.recordBootAttempt", return_value=False
+    ), patch(
+        "pyinkdisplay.pyInkPictureFrame.resetBootCounter"
+    ), patch(
         "pyinkdisplay.pyInkPictureFrame.subprocess.run"
     ) as mock_run:
 
@@ -195,6 +199,10 @@ def test_pyInkPictureFrame_quiet_hours_battery_shuts_down():
         "pyinkdisplay.pyInkPictureFrame.secondsUntilQuietEnd", return_value=28800
     ), patch(
         "pyinkdisplay.pyInkPictureFrame.getCurrentTag", return_value="v0.3.6"
+    ), patch(
+        "pyinkdisplay.pyInkPictureFrame.recordBootAttempt", return_value=False
+    ), patch(
+        "pyinkdisplay.pyInkPictureFrame.resetBootCounter"
     ), patch(
         "pyinkdisplay.pyInkPictureFrame.time.sleep"
     ) as mock_sleep, patch(
