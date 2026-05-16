@@ -250,7 +250,7 @@ def recordBootAttempt(state_path: Optional[Path] = None) -> bool:
     if same_tag:
         first_attempt_iso = state.get("first_attempt")
         try:
-            first_attempt = datetime.fromisoformat(first_attempt_iso)
+            first_attempt = datetime.fromisoformat(str(first_attempt_iso))
         except (TypeError, ValueError):
             first_attempt = now
         within_window = (now - first_attempt) <= BOOT_ATTEMPT_WINDOW
