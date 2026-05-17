@@ -43,7 +43,7 @@ from .pyMqttDiscovery import (
     publishHaTelemetryDiscovery,
 )
 from .pyNotifications import notifyIfConfigured
-from .pySugarAlarm import PiSugarAlarm
+from .pySugarAlarm import PiSugarAlarm, PiSugarConnectionError
 from .pyUpdater import (
     applyUpdate,
     checkAndApplyUpdate,
@@ -365,13 +365,25 @@ def continuousEpdUpdateLoop(
             sleepChunk = min(remainingSleepTime, checkInterval)
             time.sleep(sleepChunk)
             remainingSleepTime -= sleepChunk
-            if not alarmManager.isSugarPowered():
+            try:
+                powered = alarmManager.isSugarPowered()
+            except PiSugarConnectionError:
+                logging.warning(
+                    "PiSugar unreachable during sleep check — assuming still powered."
+                )
+                powered = True
+            if not powered:
                 logging.info(
                     "Power disconnected during sleep. Transitioning to battery mode."
                 )
                 return True
 
-        if not alarmManager.isSugarPowered():
+        try:
+            powered_after = alarmManager.isSugarPowered()
+        except PiSugarConnectionError:
+            logging.warning("PiSugar unreachable after sleep — assuming still powered.")
+            powered_after = True
+        if not powered_after:
             try:
                 battery_str = f"{alarmManager.getBatteryLevel()}%"
             except Exception:
