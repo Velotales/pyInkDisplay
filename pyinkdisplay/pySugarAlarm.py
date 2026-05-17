@@ -191,7 +191,14 @@ class PiSugarAlarm:
         """
         logger.info("Attempting to connect to PiSugar server...")
         try:
-            self.connection, self.eventConnection = connect_tcp()
+            self.connection, event_sock = connect_tcp()
+            # Close the event socket immediately — we never register tap handlers,
+            # so the PiSugarServer event thread is unnecessary. Passing None skips
+            # thread creation, preventing a thread leak on repeated reconnects
+            # (Pi Zero hits the thread limit after ~100 calls and raises
+            # "can't start new thread").
+            event_sock.close()
+            self.eventConnection = None
             # pisugar-server sends b'long\n' to every new connection as a
             # greeting. The library strips 'long' but leaves b'\n', which is
             # truthy and so isn't retried — it causes 'Expected rtc_time but
@@ -206,7 +213,7 @@ class PiSugarAlarm:
                     logger.debug("Drained PiSugar command socket greeting: %r", data)
             except Exception:
                 pass
-            self.pisugar = PiSugarServer(self.connection, self.eventConnection)
+            self.pisugar = PiSugarServer(self.connection, None)
             logger.info("Successfully connected to PiSugar server.")
         except Exception as e:
             raise PiSugarConnectionError(
