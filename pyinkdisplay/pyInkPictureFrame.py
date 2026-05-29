@@ -504,6 +504,22 @@ def pyInkPictureFrame():
             )
             if power_lost:
                 logging.info("PiSugar is on battery. Running one-shot battery mode.")
+                if mqttConfig:
+                    try:
+                        batteryLevel = alarmManager.getBatteryLevel()
+                    except Exception:
+                        batteryLevel = None
+                    publishHaTelemetry(
+                        mqttConfig,
+                        {
+                            "battery_level": batteryLevel,
+                            "last_update_time": datetime.now(timezone.utc).isoformat(),
+                            "image_fetch_status": "success",
+                            "power_mode": "battery",
+                            "software_version": getCurrentTag() or "unknown",
+                            "update_available": False,
+                        },
+                    )
                 runBatteryMode(
                     alarmManager,
                     merged["alarmMinutes"],
