@@ -28,11 +28,11 @@ MAX_EVENTS = 500
 
 @dataclass
 class WakeCycle:
-    time: datetime       # SAST
-    power: str           # "battery" or "usb"
+    time: datetime  # SAST
+    power: str  # "battery" or "usb"
     battery_start: float
     battery_end: float | None  # published level after update (None if skipped)
-    skipped: bool        # quiet hours — display not updated
+    skipped: bool  # quiet hours — display not updated
 
 
 def _fetch_events() -> list[dict]:
@@ -40,11 +40,13 @@ def _fetch_events() -> list[dict]:
         f"SEQ_IP=$(docker inspect seq --format "
         f"'{{{{range .NetworkSettings.Networks}}}}{{{{.IPAddress}}}}{{{{end}}}}') && "
         f"curl -s -H 'X-Seq-ApiKey: {SEQ_API_KEY}' "
-        f"\"http://${{SEQ_IP}}:80/api/events?count={MAX_EVENTS}\""
+        f'"http://${{SEQ_IP}}:80/api/events?count={MAX_EVENTS}"'
     )
     result = subprocess.run(
         ["ssh", f"dwalsh@{SEQ_HOST}", cmd],
-        capture_output=True, text=True, timeout=20,
+        capture_output=True,
+        text=True,
+        timeout=20,
     )
     if result.returncode != 0:
         print(f"SSH/curl failed: {result.stderr.strip()}", file=sys.stderr)
@@ -62,7 +64,9 @@ def _props(event: dict) -> dict:
 
 def _parse_battery(text: str) -> float | None:
     # "battery: 86.5%" from Starting lines, or "battery level 79.01683%" from Published lines
-    m = re.search(r"battery(?:[:\s]+level)?\s+([0-9]+(?:\.[0-9]+)?)", text, re.IGNORECASE)
+    m = re.search(
+        r"battery(?:[:\s]+level)?\s+([0-9]+(?:\.[0-9]+)?)", text, re.IGNORECASE
+    )
     return float(m.group(1)) if m else None
 
 
@@ -153,15 +157,21 @@ def print_report(cycles: list[WakeCycle]) -> None:
 
         start_pct = session[0].battery_start
         # Use last published end, or last start as fallback
-        last_with_end = next((c for c in reversed(session) if c.battery_end is not None), None)
-        end_pct = last_with_end.battery_end if last_with_end else session[-1].battery_start
+        last_with_end = next(
+            (c for c in reversed(session) if c.battery_end is not None), None
+        )
+        end_pct = (
+            last_with_end.battery_end if last_with_end else session[-1].battery_start
+        )
         total_drain = start_pct - end_pct
 
         print(f"\n{'═'*62}")
         print(f"  Battery session {i}  —  {start_ts.strftime('%a %d %b, %H:%M')} SAST")
         print(f"{'═'*62}")
-        print(f"  Start: {start_pct:.1f}%   End: {end_pct:.1f}%   "
-              f"Drain: {total_drain:.1f}%   Duration: {_fmt_duration(duration)}")
+        print(
+            f"  Start: {start_pct:.1f}%   End: {end_pct:.1f}%   "
+            f"Drain: {total_drain:.1f}%   Duration: {_fmt_duration(duration)}"
+        )
         print()
         print(f"  {'Time (SAST)':<18} {'Start%':>7} {'End%':>7} {'Drain':>7}  Note")
         print(f"  {'-'*18} {'-'*7} {'-'*7} {'-'*7}  {'-'*10}")
@@ -179,8 +189,10 @@ def print_report(cycles: list[WakeCycle]) -> None:
                     drains.append(drain)
                     drain_str = f"-{drain:.1f}%"
             end_str = f"{c.battery_end:.1f}%" if c.battery_end is not None else "  —  "
-            print(f"  {c.time.strftime('%a %d %b %H:%M'):<18} "
-                  f"{c.battery_start:>6.1f}% {end_str:>7} {drain_str:>8}  {note}")
+            print(
+                f"  {c.time.strftime('%a %d %b %H:%M'):<18} "
+                f"{c.battery_start:>6.1f}% {end_str:>7} {drain_str:>8}  {note}"
+            )
 
         if drains:
             avg_drain = sum(drains) / len(drains)
@@ -189,8 +201,10 @@ def print_report(cycles: list[WakeCycle]) -> None:
             if avg_drain > 0:
                 cycles_remaining = end_pct / avg_drain
                 mins_remaining = cycles_remaining * 120  # 120 min interval
-                print(f"  Estimated remaining: {_fmt_duration(timedelta(minutes=mins_remaining))} "
-                      f"({cycles_remaining:.0f} more cycles at current rate)")
+                print(
+                    f"  Estimated remaining: {_fmt_duration(timedelta(minutes=mins_remaining))} "
+                    f"({cycles_remaining:.0f} more cycles at current rate)"
+                )
 
     # Drain rate summary across all sessions
     all_drains = [
@@ -204,7 +218,9 @@ def print_report(cycles: list[WakeCycle]) -> None:
         est_full = 100.0 / overall_avg * 120
         print(f"\n{'─'*62}")
         print(f"  Overall avg drain: {overall_avg:.2f}% per 2h cycle")
-        print(f"  Estimated full-charge runtime: {_fmt_duration(timedelta(minutes=est_full))}")
+        print(
+            f"  Estimated full-charge runtime: {_fmt_duration(timedelta(minutes=est_full))}"
+        )
         print(f"{'─'*62}\n")
 
 
@@ -215,8 +231,12 @@ def _fmt_duration(d: timedelta) -> str:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="pyInkDisplay battery history from Seq")
-    parser.add_argument("--days", type=int, default=7, help="How many days back to show (default 7)")
+    parser = argparse.ArgumentParser(
+        description="pyInkDisplay battery history from Seq"
+    )
+    parser.add_argument(
+        "--days", type=int, default=7, help="How many days back to show (default 7)"
+    )
     args = parser.parse_args()
 
     since = datetime.now(tz=timezone(SAST_OFFSET)) - timedelta(days=args.days)
