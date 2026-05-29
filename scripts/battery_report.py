@@ -165,16 +165,16 @@ def print_report(cycles: list[WakeCycle]) -> None:
         )
         total_drain = start_pct - end_pct
 
-        print(f"\n{'═'*62}")
+        print(f"\n{'═' * 62}")
         print(f"  Battery session {i}  —  {start_ts.strftime('%a %d %b, %H:%M')} SAST")
-        print(f"{'═'*62}")
+        print(f"{'═' * 62}")
         print(
             f"  Start: {start_pct:.1f}%   End: {end_pct:.1f}%   "
             f"Drain: {total_drain:.1f}%   Duration: {_fmt_duration(duration)}"
         )
         print()
         print(f"  {'Time (SAST)':<18} {'Start%':>7} {'End%':>7} {'Drain':>7}  Note")
-        print(f"  {'-'*18} {'-'*7} {'-'*7} {'-'*7}  {'-'*10}")
+        print(f"  {'-' * 18} {'-' * 7} {'-' * 7} {'-' * 7}  {'-' * 10}")
 
         drains = []
         for c in session:
@@ -201,8 +201,9 @@ def print_report(cycles: list[WakeCycle]) -> None:
             if avg_drain > 0:
                 cycles_remaining = end_pct / avg_drain
                 mins_remaining = cycles_remaining * 120  # 120 min interval
+                est = _fmt_duration(timedelta(minutes=mins_remaining))
                 print(
-                    f"  Estimated remaining: {_fmt_duration(timedelta(minutes=mins_remaining))} "
+                    f"  Estimated remaining: {est} "
                     f"({cycles_remaining:.0f} more cycles at current rate)"
                 )
 
@@ -216,12 +217,13 @@ def print_report(cycles: list[WakeCycle]) -> None:
     if len(all_drains) >= 3:
         overall_avg = sum(all_drains) / len(all_drains)
         est_full = 100.0 / overall_avg * 120
-        print(f"\n{'─'*62}")
+        print(f"\n{'─' * 62}")
         print(f"  Overall avg drain: {overall_avg:.2f}% per 2h cycle")
         print(
-            f"  Estimated full-charge runtime: {_fmt_duration(timedelta(minutes=est_full))}"
+            f"  Estimated full-charge runtime: "
+            f"{_fmt_duration(timedelta(minutes=est_full))}"
         )
-        print(f"{'─'*62}\n")
+        print(f"{'─' * 62}\n")
 
 
 def _fmt_duration(d: timedelta) -> str:
