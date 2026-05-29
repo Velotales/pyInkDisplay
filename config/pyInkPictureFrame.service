@@ -10,7 +10,7 @@ WorkingDirectory=/home/your_user/pyInkDisplay
 Environment=PATH=/home/your_user/pyInkDisplay/.venv/bin:/usr/local/bin:/usr/bin:/bin
 ExecStart=/home/your_user/pyInkDisplay/.venv/bin/python -m pyinkdisplay.pyInkPictureFrame -e waveshare_epd.epd7in3f -u http://your-home-assistant/dashboard.png -a 120
 Restart=on-failure
-RestartPreventExitStatus=0
+RestartPreventExitStatus=0 SIGTERM SIGINT
 PrivateTmp=true
 
 [Install]
