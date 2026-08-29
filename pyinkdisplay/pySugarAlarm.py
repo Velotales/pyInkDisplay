@@ -26,14 +26,45 @@ SOFTWARE.
 
 import logging
 import select
+import subprocess
 import time
 from datetime import datetime, timedelta
+from pathlib import Path
 from typing import Any, Optional
 
 import pytz  # type: ignore[import-untyped]
 import requests  # type: ignore[import-untyped]
 
 logger = logging.getLogger(__name__)
+
+# systemd-timesyncd touches this once it has stepped the clock from a real
+# time source. Present means synced; absent means we have to ask timedatectl.
+_TIMESYNC_MARKER = Path("/run/systemd/timesync/synchronized")
+
+
+def _isSystemClockSynced() -> bool:
+    """Return True only when the OS reports the system clock as NTP-synchronised.
+
+    At boot the clock holds whatever fake-hwclock restored, which can be days
+    stale while still looking like a plausible date. "Unknown" is treated as
+    "not synced" on purpose: skipping a sync only leaves the RTC on its own
+    time, while writing a stale one corrupts the wake alarm.
+    """
+    if _TIMESYNC_MARKER.exists():
+        return True
+    try:
+        result = subprocess.run(
+            ["timedatectl", "show", "--property=NTPSynchronized", "--value"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+            check=True,
+        )
+    except Exception as e:
+        logger.warning("Could not determine system clock sync state: %s", e)
+        return False
+    return result.stdout.strip() == "yes"
+
 
 # Import the PiSugar module
 try:
@@ -235,6 +266,14 @@ class PiSugarAlarm:
             logger.warning(
                 "System clock looks wrong (year < 2024). "
                 "Skipping RTC sync — using existing RTC time."
+            )
+            return initialRtcTime
+        if not _isSystemClockSynced():
+            logger.warning(
+                "System clock is not NTP-synchronised yet (currently %s). "
+                "Skipping RTC sync, using existing RTC time so the wake alarm "
+                "is not computed from a stale clock.",
+                datetime.now().isoformat(),
             )
             return initialRtcTime
         try:
