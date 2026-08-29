@@ -32,6 +32,45 @@ from PIL import Image
 
 logger = logging.getLogger(__name__)
 
+# Above this relative difference in aspect ratio, cropping would cut into the
+# subject (a 3:4 portrait keeps only its middle 45%), so letterbox instead.
+_MAX_CROP_MISMATCH = 0.25
+
+
+def fitImageToPanel(image, width, height, mismatchLimit=_MAX_CROP_MISMATCH):
+    """Fit an image to the panel without distorting it.
+
+    Crops to fill when the aspect mismatch is mild, letterboxes on black when
+    it is severe. An image already at the panel's aspect ratio is scaled
+    straight to size, so a dashboard capture is unaffected.
+    """
+    if image.width == width and image.height == height:
+        return image
+
+    srcRatio = image.width / image.height
+    dstRatio = width / height
+    mismatch = abs(srcRatio - dstRatio) / dstRatio
+
+    if mismatch <= mismatchLimit:
+        scale = max(width / image.width, height / image.height)
+        scaled = image.resize(
+            (max(1, round(image.width * scale)), max(1, round(image.height * scale)))
+        )
+        left = (scaled.width - width) // 2
+        top = (scaled.height - height) // 2
+        return scaled.crop((left, top, left + width, top + height))
+
+    scale = min(width / image.width, height / image.height)
+    scaled = image.resize(
+        (max(1, round(image.width * scale)), max(1, round(image.height * scale)))
+    )
+    canvas = Image.new("RGB", (width, height), (0, 0, 0))
+    canvas.paste(
+        scaled.convert("RGB"),
+        ((width - scaled.width) // 2, (height - scaled.height) // 2),
+    )
+    return canvas
+
 
 class PyInkDisplay:
     """
@@ -106,7 +145,7 @@ class PyInkDisplay:
         logger.info("Image size: %s", image.size)
         epd = self.epd
         assert epd is not None
-        image = image.resize((epd.width, epd.height))
+        image = fitImageToPanel(image, epd.width, epd.height)
 
         logger.info("Preparing display")
         epd.prepare()

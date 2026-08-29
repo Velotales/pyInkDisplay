@@ -103,6 +103,8 @@ def test_display_image_resize_error_propagates():
     """
     display = PyInkDisplay()
     display.epd = MagicMock()
+    display.epd.width = 800
+    display.epd.height = 480
 
     image = Image.new("RGB", (100, 100))
     image.resize = MagicMock(side_effect=Exception("Resize error"))
