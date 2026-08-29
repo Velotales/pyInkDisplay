@@ -35,6 +35,7 @@ from datetime import datetime, timedelta, timezone
 import paho.mqtt.client as mqtt
 import yaml  # type: ignore[import-untyped]
 
+from .pyImageOfTheDay import fetchImageOfTheDay
 from .pyInkDisplay import EPDNotFoundError, PyInkDisplay
 from .pyLoggingConfig import setupLogging
 from .pyMqttDiscovery import (
@@ -81,6 +82,26 @@ def secondsUntilQuietEnd(now, quietConfig):
     if end_dt <= now:
         end_dt += timedelta(days=1)
     return int((end_dt - now).total_seconds())
+
+
+def isLastUpdateBeforeQuietHours(now, alarmMinutes, quietConfig):
+    """Return True if this is the final update before the quiet window opens.
+
+    The image shown by that update stays on the panel for the whole quiet
+    period, so it is the one worth spending on a photo. True when the next
+    scheduled wake falls at or after the start of the quiet window.
+    """
+    if not quietConfig:
+        return False
+    if isInQuietHours(now, quietConfig):
+        return False
+    start_time = datetime.strptime(quietConfig["start"], "%H:%M").time()
+    start_dt = now.replace(
+        hour=start_time.hour, minute=start_time.minute, second=0, microsecond=0
+    )
+    if start_dt <= now:
+        start_dt += timedelta(days=1)
+    return start_dt <= now + timedelta(minutes=alarmMinutes)
 
 
 def signalHandler(sig, frame):
@@ -296,6 +317,7 @@ def continuousEpdUpdateLoop(
     alarmMinutes,
     mqttConfig=None,
     quietConfig=None,
+    iotdConfig=None,
 ):
     """
     Continuously update the e-ink display at the specified interval while power is present.
@@ -319,8 +341,21 @@ def continuousEpdUpdateLoop(
                 battery_str = "N/A"
             logging.info("── Update ── battery: %s", battery_str)
 
-            logging.info("Fetching image...")
-            updatedImage = fetchImageFromUrl(imageUrl)
+            updatedImage = None
+            if iotdConfig and isLastUpdateBeforeQuietHours(
+                now, alarmMinutes, quietConfig
+            ):
+                logging.info(
+                    "Last update before quiet hours. Fetching image of the day..."
+                )
+                updatedImage = fetchImageOfTheDay(iotdConfig)
+                if updatedImage is None:
+                    logging.warning(
+                        "Image of the day unavailable. Falling back to dashboard."
+                    )
+            if updatedImage is None:
+                logging.info("Fetching image...")
+                updatedImage = fetchImageFromUrl(imageUrl)
             if updatedImage:
                 logging.info("Displaying on EPD...")
                 displayManager.displayImage(updatedImage)
@@ -501,6 +536,7 @@ def pyInkPictureFrame():
                 merged["alarmMinutes"],
                 mqttConfig,
                 quietConfig,
+                iotdConfig,
             )
             if power_lost:
                 logging.info("PiSugar is on battery. Running one-shot battery mode.")
@@ -567,7 +603,20 @@ def pyInkPictureFrame():
             else:
                 displayManager = PyInkDisplay(epd_type=merged["epd"])
                 logging.info("Fetching image...")
-                image = fetchImageFromUrl(merged["url"])
+                image = None
+                if iotdConfig and isLastUpdateBeforeQuietHours(
+                    now, merged["alarmMinutes"], quietConfig
+                ):
+                    logging.info(
+                        "Last update before quiet hours. Fetching image of the day..."
+                    )
+                    image = fetchImageOfTheDay(iotdConfig)
+                    if image is None:
+                        logging.warning(
+                            "Image of the day unavailable. Falling back to dashboard."
+                        )
+                if image is None:
+                    image = fetchImageFromUrl(merged["url"])
                 imageFetchStatus = "success"
                 if image is None:
                     imageFetchStatus = "failure"
